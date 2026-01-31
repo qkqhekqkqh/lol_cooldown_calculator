@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL 쿨타임 계산기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="header-top">
+                <h2>챔피언 선택</h2>
+                <span id="version-display" class="version-badge">Ver Loading...</span>
+            </div>
+            <input type="text" id="search-input" placeholder="챔피언 검색...">
+        </div>
+        
+        <div class="filter-bar" id="filter-bar"></div>
+
+        <div class="champion-grid" id="champion-grid"></div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-settings-bar">
+            <div class="mode-switch-wrapper">
+                <span class="mode-label active-text">단일</span>
+                <label class="switch">
+                    <input type="checkbox" id="mode-toggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="mode-label">비교</span>
+            </div>
+
+            <div class="view-toggle-wrapper">
+                <span class="mode-label">스킬 레벨로 보기</span>
+                <label class="switch">
+                    <input type="checkbox" id="view-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="mode-label active-text">한번에 보기</span>
+            </div>
+        </div>
+
+        <div class="detail-container single-mode">
+            
+            <div class="champion-slot active" id="slot-1">
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-1">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-1" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="control-divider">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속</span>
+                            <span class="cdr-text" id="disp-ult-cdr-1">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-1" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-reset-full" id="btn-reset-1">초기화</button>
+                </div>
+
+                <div class="slot-content-wrapper">
+                    <div class="slot-header" style="display:none;">
+                        </div>
+                    
+                    <div class="empty-state">
+                        <div class="icon">?</div>
+                        <p>좌측 목록에서 챔피언을 선택하세요.</p>
+                    </div>
+
+                    <div id="skills-1"></div>
+                </div>
+            </div>
+
+            <div class="champion-slot" id="slot-2" style="display: none;">
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-2">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-2" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="control-divider">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속</span>
+                            <span class="cdr-text" id="disp-ult-cdr-2">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-2" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-reset-full" id="btn-reset-2">초기화</button>
+                </div>
+
+                <div class="slot-content-wrapper">
+                    <div class="slot-header" style="display:none;"></div>
+                    <div class="empty-state">
+                        <div class="icon">?</div>
+                        <p>비교할 챔피언을 선택하세요.</p>
+                    </div>
+                    <div id="skills-2"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="tooltip" class="tooltip hidden"></div>
+<script src="script.js"></script>
+</body>
+</html>
