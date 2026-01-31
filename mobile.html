@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LoL 쿨타임 계산기</title>
+    
+    <script>
+        if (window.innerWidth > 800 && window.location.search.indexOf('mode=mobile') === -1) {
+            window.location.href = 'index.html?mode=desktop';
+        }
+    </script>
+
+    <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="color:white; margin:0;">챔피언 검색</h3>
+            </div>
+            <input type="text" id="search-input" placeholder="챔피언 검색 (가렌, Garen)" 
+                   style="width:100%; padding:10px; background:#0b0c15; border:1px solid #3d4960; color:white; border-radius:6px; margin-bottom:10px;">
+            <div id="filter-bar" class="filter-bar"></div>
+        </div>
+        <div id="champion-grid" class="champion-grid"></div>
+        <button id="sidebar-close-btn" class="sidebar-close-btn">닫기</button>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            
+            <div class="app-top-bar">
+                <div class="title-wrapper">
+                    <h1 class="app-title">LoL 쿨타임 계산기</h1>
+                    <span id="header-version" class="version-tag">Patch ...</span>
+                </div>
+                <a href="index.html?mode=desktop" class="header-pc-btn">PC 버전</a>
+            </div>
+
+            <button id="mobile-menu-btn" class="mobile-menu-btn">
+                <span style="font-size:18px;">🔍</span> 챔피언 검색 / 목록 열기
+            </button>
+
+            <div class="settings-area">
+                <label class="toggle-label">
+                    <span>한눈에 보기</span>
+                    <input type="checkbox" id="view-toggle-mobile" class="toggle-checkbox" checked>
+                    <div class="toggle-switch"></div>
+                </label>
+            </div>
+
+            <div id="slot-1" class="champion-slot active">
+                <div class="slot-header">
+                    <div class="champ-portrait">
+                        <div id="holder-1" class="placeholder-circle">?</div>
+                        <img id="img-champ-1" style="display:none;" src="" alt="">
+                    </div>
+                    <div>
+                        <h2 id="name-champ-1" style="color:#fff;">챔피언 선택</h2>
+                        <div style="font-size:12px; color:#888;">터치하여 상세 정보 확인</div>
+                    </div>
+                </div>
+
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-1">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-1" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속 (스킬가속에 추가 적용)</span>
+                            <span class="cdr-text" id="disp-ult-cdr-1">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
+                                <button data-val="-10">-10</button>
+                                <button data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-1" value="0">
+                            <div class="btn-group plus">
+                                <button data-val="5">+5</button>
+                                <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="btn-reset-1" class="btn-reset-full">초기화</button>
+                </div>
+                
+                <hr style="border:0; border-top:1px solid #2a2e3f; margin:20px 0;">
+
+                <div id="spells-1" class="spells-container">
+                    <div style="text-align:center; color:#555; padding:20px;">
+                        상단 버튼을 눌러 챔피언을 선택하세요.
+                    </div>
+                </div>
+            </div>
+
+            </div>
+    </div>
+
+    <script src="mobile.js"></script>
+</body>
+</html>

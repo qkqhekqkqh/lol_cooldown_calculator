@@ -262,3 +262,24 @@ input[type=number] { -moz-appearance: textfield; }
 
 .hidden { display: none !important; }
 .tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid var(--border); padding: 16px; border-radius: 6px; width: 340px; color: #ddd; font-size: 14px; pointer-events: none; z-index: 1000; line-height: 1.5; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+/* 버전 전환 버튼 스타일 */
+.view-switch-btn {
+    display: inline-block;
+    padding: 8px 12px;
+    background-color: #2a2e3f;
+    color: #8892b0;
+    border: 1px solid #3d4960;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    transition: 0.2s;
+    margin-left: 10px; /* PC 상단바용 여백 */
+}
+
+.view-switch-btn:hover {
+    background-color: #00d1ff;
+    color: #0b0c15;
+    border-color: #00d1ff;
+    font-weight: bold;
+}

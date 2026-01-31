@@ -2,11 +2,18 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoL 쿨타임 계산기</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <title>LoL 쿨타임 계산기 (PC)</title>
+    <script>
+        // URL에 '?mode=desktop'이 있으면 모바일이라도 리다이렉트 안 함
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') !== 'desktop') {
+            var userAgent = navigator.userAgent;
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            if (isMobile) {
+                window.location.href = "mobile.html"; 
+            }
+        }
+    </script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,6 +35,7 @@
 
     <div class="main-content">
         <div class="top-settings-bar">
+            
             <div class="mode-switch-wrapper">
                 <span class="mode-label active-text">단일</span>
                 <label class="switch">
@@ -45,6 +53,9 @@
                 </label>
                 <span class="mode-label active-text">한번에 보기</span>
             </div>
+
+            <a href="mobile.html?mode=mobile" class="view-switch-btn">📱 모바일 버전</a>
+
         </div>
 
         <div class="detail-container single-mode">
@@ -98,8 +109,7 @@
                 </div>
 
                 <div class="slot-content-wrapper">
-                    <div class="slot-header" style="display:none;">
-                        </div>
+                    <div class="slot-header" style="display:none;"></div>
                     
                     <div class="empty-state">
                         <div class="icon">?</div>
