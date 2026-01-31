@@ -11,8 +11,30 @@ let isAllLevelView = true;
 let currentSearch = "";
 let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-// [수정] 자음 목록 (필터 바에 표시될 순서)
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+
+// ★ API 데이터가 0초로 나오거나 충전 시간을 표시해야 하는 스킬들 대거 추가
+// Q=0, W=1, E=2, R=3
+const COOLDOWN_OVERRIDES = {
+    "Gangplank": { 2: [18, 17, 16, 15, 14] }, // E 화약통
+    "Teemo": { 3: [30, 25, 20] },             // R 버섯
+    "Corki": { 3: [12, 11, 10] },             // R 미사일
+    "Akali": { 3: [100, 80, 60] },            // R (가끔 0 표기됨)
+    "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, // Q 포탑
+    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  // W 덫
+    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         // E 펀치
+    "Ashe": { 2: [90, 80, 70, 60, 50] },         // E 매
+    "Kalista": { 1: [30, 30, 30, 30, 30] },      // W 감시하는 혼
+    "Ivern": { 1: [40, 36, 32, 28, 24] },        // W 수풀
+    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },    // E 돌진
+    "Taric": { 0: [15, 15, 15, 15, 15] },        // Q 스택 충전 (기본 15초)
+    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },    // Q 붕대 (2충전)
+    "Velkoz": { 1: [19, 18, 17, 16, 15] },       // W 균열
+    "Jhin": { 2: [28, 25, 22, 19, 16] },         // E 강제 관람
+    "Rumble": { 2: [6, 6, 6, 6, 6] },            // E 작살
+    "Zyra": { 1: [18, 16, 14, 12, 10] },         // W 씨앗
+    "Xerath": { 3: [130, 115, 100] }             // R (가끔 탄환 수만 나와서 고정값 입력)
+};
 
 async function init() {
     try {
@@ -20,13 +42,11 @@ async function init() {
         const versions = await verRes.json();
         currentVersion = versions[0];
         
-        // 버전 표기 계산 (예: 14.23.1 -> 24.23)
+        // 버전 표기 계산 (Major + 10)
         const parts = currentVersion.split('.');
         if (parts.length >= 2) {
             const major = parseInt(parts[0]) + 10;
             const minor = parts[1];
-            
-            // [수정] "Ver" -> "Patch"로 텍스트 변경
             document.getElementById('version-display').innerText = `Patch ${major}.${minor}`;
         } else {
             document.getElementById('version-display').innerText = `Patch ${currentVersion}`;
@@ -52,7 +72,6 @@ function createFilterButtons() {
 
     FILTER_KEYS.forEach(key => {
         const btn = document.createElement('div');
-        // [수정] '전체' 버튼에 특별 클래스 all-btn 부여
         btn.className = `filter-btn ${key === '전체' ? 'active all-btn' : ''}`;
         btn.innerText = key;
         btn.dataset.key = key;
@@ -119,9 +138,20 @@ function loadChampionDetail(slotId) {
     const slot = slots[slotId];
     if (!slot.data) return;
     const container = document.getElementById(`slot-${slotId}`);
-    const data = slot.data;
+    
+    // 데이터 복사
+    const data = JSON.parse(JSON.stringify(slot.data));
 
-    // [수정] empty-state 숨김 및 헤더 표시
+    // ★ [적용] 예외 데이터(쿨타임 충전시간) 덮어쓰기
+    if (COOLDOWN_OVERRIDES[data.id]) {
+        const overrides = COOLDOWN_OVERRIDES[data.id];
+        Object.keys(overrides).forEach(idx => {
+            if (data.spells[idx]) {
+                data.spells[idx].cooldown = overrides[idx];
+            }
+        });
+    }
+
     container.querySelector('.empty-state').style.display = 'none';
     const header = container.querySelector('.slot-header');
     header.style.display = 'flex';
@@ -152,8 +182,9 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
 
     let cooldownUI = '';
     
+    // API에 maxammo가 명시되어 있거나, 수동으로 입력한 리스트에 해당하면 충전형으로 간주
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
-    const isAmmo = !isNaN(ammoCount) && ammoCount > 1;
+    const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
 
     if (data.cooldown) {
@@ -202,7 +233,7 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const text = (data.description || "") + (data.tooltip || "");
     if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
-    if (isAmmo) tags.push(`<span class="tag ammo">충전형 (최대 ${ammoCount}개)</span>`);
+    if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`); // 충전형 태그
 
     return `
         <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
@@ -324,7 +355,6 @@ function setupEventListeners() {
 
     document.querySelectorAll('.champion-slot').forEach(slot => {
         slot.addEventListener('click', (e) => {
-            // 버튼 클릭 등은 무시
             if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
             activeSlot = parseInt(slot.id.split('-')[1]);
             document.querySelectorAll('.champion-slot').forEach(el => el.classList.remove('active'));
@@ -338,7 +368,7 @@ function setupEventListeners() {
         if (e.target.checked) {
             container.classList.remove('single-mode');
             labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');    
-            document.getElementById('slot-2').style.display = 'block'; // flex 대신 block (CSS에서 제어됨)
+            document.getElementById('slot-2').style.display = 'block'; 
         } else {
             container.classList.add('single-mode');
             labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');

@@ -5,7 +5,29 @@ let slots = {
 };
 let activeSlot = 1;
 
-// ★ [수정] 기본값 true (한눈에 보기 활성화)
+// ★ API 데이터가 0초로 잘못 나오는 스킬들 수동 보정 (ID: {스킬인덱스: [쿨타임배열]})
+// Q=0, W=1, E=2, R=3
+const COOLDOWN_OVERRIDES = {
+    "Gangplank": { 2: [18, 17, 16, 15, 14] }, // E 화약통
+    "Teemo": { 3: [30, 25, 20] },             // R 버섯
+    "Corki": { 3: [12, 11, 10] },             // R 미사일
+    "Akali": { 3: [100, 80, 60] },            // R (가끔 0 표기됨)
+    "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, // Q 포탑
+    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  // W 덫
+    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         // E 펀치
+    "Ashe": { 2: [90, 80, 70, 60, 50] },         // E 매
+    "Kalista": { 1: [30, 30, 30, 30, 30] },      // W 감시하는 혼
+    "Ivern": { 1: [40, 36, 32, 28, 24] },        // W 수풀
+    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },    // E 돌진
+    "Taric": { 0: [15, 15, 15, 15, 15] },        // Q 스택 충전 (기본 15초)
+    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },    // Q 붕대 (2충전)
+    "Velkoz": { 1: [19, 18, 17, 16, 15] },       // W 균열
+    "Jhin": { 2: [28, 25, 22, 19, 16] },         // E 강제 관람
+    "Rumble": { 2: [6, 6, 6, 6, 6] },            // E 작살
+    "Zyra": { 1: [18, 16, 14, 12, 10] },         // W 씨앗
+    "Xerath": { 3: [130, 115, 100] }             // R (가끔 탄환 수만 나와서 고정값 입력)
+};
+
 let isAllLevelView = true; 
 
 // 필터 설정
@@ -135,7 +157,21 @@ function loadChampionDetail(slotId) {
     const slot = slots[slotId];
     if (!slot.data) return;
     
-    const data = slot.data;
+    // 객체 복사 (원본 오염 방지)
+    const data = JSON.parse(JSON.stringify(slot.data)); 
+
+    // ★ [추가] 예외 데이터가 있으면 쿨타임 강제 적용
+    if (COOLDOWN_OVERRIDES[data.id]) {
+        const overrides = COOLDOWN_OVERRIDES[data.id];
+        // overrides 객체의 키(스킬 인덱스)를 순회
+        Object.keys(overrides).forEach(idx => {
+            if (data.spells[idx]) {
+                data.spells[idx].cooldown = overrides[idx];
+            }
+        });
+    }
+
+    // --- 이하 기존 코드와 동일 ---
     const imgEl = document.getElementById(`img-champ-${slotId}`);
     const holderEl = document.getElementById(`holder-${slotId}`);
     const nameEl = document.getElementById(`name-champ-${slotId}`);
