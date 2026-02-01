@@ -9,3 +9,6 @@
 It’s simply a web-based viewer that shows the cooldowns of your lane opponent’s skills during the laning phase.
 It uses Riot’s Data Dragon, and most of it was built with the help of Gemini.
 I got the idea after watching BebePink’s YouTube videos about mid-lane.
+
+
+https://qkqhekqkqh.github.io/lol_cooldown_calculator/
