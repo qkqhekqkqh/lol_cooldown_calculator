@@ -359,80 +359,129 @@ function addTooltipEvents() {
 }
 
 function setupEventListeners() {
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        currentSearch = e.target.value;
-        if(currentSearch) {
-            currentConsonant = 'ALL';
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector('.filter-btn[data-key="전체"]').classList.add('active');
-        }
-        renderChampionList();
-    });
-
-    document.querySelectorAll('.champion-slot').forEach(slot => {
-        slot.addEventListener('click', (e) => {
-            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-            activeSlot = parseInt(slot.id.split('-')[1]);
-            document.querySelectorAll('.champion-slot').forEach(el => el.classList.remove('active'));
-            slot.classList.add('active');
+    // 1. 검색창 (있을 때만 동작)
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            if(currentSearch) {
+                currentConsonant = 'ALL';
+                // 필터 버튼 초기화
+                const btns = document.querySelectorAll('.filter-btn');
+                if (btns.length > 0) {
+                    btns.forEach(b => b.classList.remove('active'));
+                    const allBtn = document.querySelector('.filter-btn[data-key="전체"]');
+                    if (allBtn) allBtn.classList.add('active');
+                }
+            }
+            renderChampionList();
         });
-    });
+    }
 
-    document.getElementById('mode-toggle').addEventListener('change', (e) => {
-        const container = document.querySelector('.detail-container');
-        const labels = document.querySelectorAll('.mode-switch-wrapper .mode-label');
-        if (e.target.checked) {
-            container.classList.remove('single-mode');
-            labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');    
-            document.getElementById('slot-2').style.display = 'flex'; 
-        } else {
-            container.classList.add('single-mode');
-            labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
-            document.getElementById('slot-2').style.display = 'none';
-            activeSlot = 1;
-            document.getElementById('slot-1').classList.add('active');
-        }
-    });
+    // 2. 챔피언 슬롯 클릭 (있을 때만 동작)
+    const slots = document.querySelectorAll('.champion-slot');
+    if (slots.length > 0) {
+        slots.forEach(slot => {
+            slot.addEventListener('click', (e) => {
+                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                activeSlot = parseInt(slot.id.split('-')[1]);
+                document.querySelectorAll('.champion-slot').forEach(el => el.classList.remove('active'));
+                slot.classList.add('active');
+            });
+        });
+    }
 
-    document.getElementById('view-toggle').addEventListener('change', (e) => {
-        isAllLevelView = e.target.checked;
-        const labels = document.querySelectorAll('.view-toggle-wrapper .mode-label');
-        if(isAllLevelView) {
-            labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');
-        } else {
-            labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
-        }
-        loadChampionDetail(1);
-        loadChampionDetail(2);
-    });
+    // 3. 모드 토글 (단일/비교 모드) - 모바일에 없으면 무시
+    const modeToggle = document.getElementById('mode-toggle');
+    if (modeToggle) {
+        modeToggle.addEventListener('change', (e) => {
+            const container = document.querySelector('.detail-container');
+            const labels = document.querySelectorAll('.mode-switch-wrapper .mode-label');
+            const slot2 = document.getElementById('slot-2');
+            
+            if (e.target.checked) {
+                if(container) container.classList.remove('single-mode');
+                if(labels.length > 1) { labels[0].classList.remove('active-text'); labels[1].classList.add('active-text'); }
+                if(slot2) slot2.style.display = 'flex'; 
+            } else {
+                if(container) container.classList.add('single-mode');
+                if(labels.length > 1) { labels[0].classList.add('active-text'); labels[1].classList.remove('active-text'); }
+                if(slot2) slot2.style.display = 'none';
+                
+                activeSlot = 1;
+                const slot1 = document.getElementById('slot-1');
+                if(slot1) slot1.classList.add('active');
+            }
+        });
+    }
 
+    // 4. 레벨 보기 토글 (전체 레벨/현재 레벨) - 없으면 무시
+    const viewToggle = document.getElementById('view-toggle');
+    if (viewToggle) {
+        viewToggle.addEventListener('change', (e) => {
+            isAllLevelView = e.target.checked;
+            const labels = document.querySelectorAll('.view-toggle-wrapper .mode-label');
+            if (labels.length > 1) {
+                if(isAllLevelView) {
+                    labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');
+                } else {
+                    labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
+                }
+            }
+            loadChampionDetail(1);
+            loadChampionDetail(2);
+        });
+    }
+
+    // 5. 초기화(Reset) 버튼들
     [1, 2].forEach(id => {
         setupControl(id, 'haste');
         setupControl(id, 'ult');
-        document.getElementById(`btn-reset-${id}`).addEventListener('click', () => {
-            slots[id].haste = 0; slots[id].ultHaste = 0;
-            updateCooldownsInSlot(id);
-        });
+        
+        const resetBtn = document.getElementById(`btn-reset-${id}`);
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (slots[id]) { // 전역 변수 slots 체크
+                    slots[id].haste = 0; 
+                    slots[id].ultHaste = 0;
+                    updateCooldownsInSlot(id);
+                }
+            });
+        }
     });
 }
 
 function setupControl(slotId, type) {
-    const input = document.getElementById(`input-${type}-${slotId}`);
+    const inputId = `input-${type}-${slotId}`;
+    const input = document.getElementById(inputId);
+    
+    // 입력창(input)이 HTML에 없으면 함수 종료 (에러 방지)
+    if (!input) return;
+
     const key = type === 'haste' ? 'haste' : 'ultHaste';
+    
     input.addEventListener('change', (e) => {
         let val = parseInt(e.target.value) || 0;
         if (val < 0) val = 0;
-        slots[slotId][key] = val;
-        updateCooldownsInSlot(slotId);
-    });
-    const parent = input.closest('.control-unit');
-    parent.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const delta = parseInt(btn.dataset.val);
-            slots[slotId][key] = Math.max(0, slots[slotId][key] + delta);
+        if (slots[slotId]) {
+            slots[slotId][key] = val;
             updateCooldownsInSlot(slotId);
-        });
+        }
     });
+
+    // +/- 버튼 연결
+    const parent = input.closest('.control-unit');
+    if (parent) {
+        parent.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const delta = parseInt(btn.dataset.val);
+                if (slots[slotId]) {
+                    slots[slotId][key] = Math.max(0, slots[slotId][key] + delta);
+                    updateCooldownsInSlot(slotId);
+                }
+            });
+        });
+    }
 }
 
 init();
