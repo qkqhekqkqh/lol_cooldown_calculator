@@ -1,81 +1,86 @@
-let currentVersion = '14.1.1'; 
+// mobile.js
+
+let currentVersion = '14.1.1';
 let champions = {};
 let slots = {
     1: { id: null, haste: 0, ultHaste: 0, data: null },
-    2: { id: null, haste: 0, ultHaste: 0, data: null }
+    2: { id: null, haste: 0, ultHaste: 0, data: null } // 슬롯 2는 확장성 위해 남겨둠
 };
 let activeSlot = 1;
-let isAllLevelView = true; 
+let isAllLevelView = true;
 
 let currentSearch = "";
 let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
+// 쿨타임 오버라이드 데이터 (충전형 등)
 const COOLDOWN_OVERRIDES = {
-    "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
-    "Teemo": { 3: [30, 25, 20] },             
-    "Corki": { 3: [12, 11, 10] },             
-    "Akali": { 3: [100, 80, 60] },            
-    "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, 
-    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  
-    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         
-    "Ashe": { 2: [90, 80, 70, 60, 50] },         
-    "Kalista": { 1: [30, 30, 30, 30, 30] },      
-    "Ivern": { 1: [40, 36, 32, 28, 24] },        
-    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },    
-    "Taric": { 0: [15, 15, 15, 15, 15] },        
-    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },    
-    "Velkoz": { 1: [19, 18, 17, 16, 15] },       
-    "Jhin": { 2: [28, 25, 22, 19, 16] },         
-    "Rumble": { 2: [6, 6, 6, 6, 6] },            
-    "Zyra": { 1: [18, 16, 14, 12, 10] },         
-    "Xerath": { 3: [130, 115, 100] }             
+    "Gangplank": { 2: [18, 17, 16, 15, 14] },
+    "Teemo": { 3: [30, 25, 20] },
+    "Corki": { 3: [12, 11, 10] },
+    "Akali": { 3: [100, 80, 60] },
+    "Heimerdinger": { 0: [20, 20, 20, 20, 20] },
+    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },
+    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },
+    "Ashe": { 2: [90, 80, 70, 60, 50] },
+    "Kalista": { 1: [30, 30, 30, 30, 30] },
+    "Ivern": { 1: [40, 36, 32, 28, 24] },
+    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },
+    "Taric": { 0: [15, 15, 15, 15, 15] },
+    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },
+    "Velkoz": { 1: [19, 18, 17, 16, 15] },
+    "Jhin": { 2: [28, 25, 22, 19, 16] },
+    "Rumble": { 2: [6, 6, 6, 6, 6] },
+    "Zyra": { 1: [18, 16, 14, 12, 10] },
+    "Xerath": { 3: [130, 115, 100] }
 };
 
 async function init() {
     try {
+        // 1. 버전 정보 가져오기
         const verRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
         const versions = await verRes.json();
         currentVersion = versions[0];
         
-        const parts = currentVersion.split('.');
-        if (parts.length >= 2) {
-            const major = parseInt(parts[0]) + 10;
-            const minor = parts[1];
-            document.getElementById('version-display').innerText = `Patch ${major}.${minor}`;
-        } else {
-            document.getElementById('version-display').innerText = `Patch ${currentVersion}`;
+        const verDisplay = document.getElementById('version-display');
+        if (verDisplay) {
+            const parts = currentVersion.split('.');
+            verDisplay.innerText = parts.length >= 2 ? `Patch ${parts[0]}.${parts[1]}` : `Patch ${currentVersion}`;
         }
 
+        // 2. 챔피언 데이터 가져오기
         const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/data/ko_KR/championFull.json`);
         const champData = await champRes.json();
         champions = champData.data;
 
-        createFilterButtons(); 
-        renderChampionList();  
-        setupEventListeners(); 
+        createFilterButtons();
+        renderChampionList();
+        setupEventListeners();
         
     } catch (e) {
         console.error("데이터 로딩 실패:", e);
-        alert("챔피언 데이터를 불러오는데 실패했습니다.");
+        const verDisplay = document.getElementById('version-display');
+        if(verDisplay) verDisplay.innerText = "데이터 로딩 실패";
     }
 }
 
 function createFilterButtons() {
     const bar = document.getElementById('filter-bar');
+    if(!bar) return;
     bar.innerHTML = "";
     FILTER_KEYS.forEach(key => {
         const btn = document.createElement('div');
-        btn.className = `filter-btn ${key === '전체' ? 'active all-btn' : ''}`;
+        btn.className = `filter-btn ${key === '전체' ? 'active' : ''}`;
         btn.innerText = key;
         btn.dataset.key = key;
         btn.onclick = () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentConsonant = key === '전체' ? 'ALL' : key;
-            document.getElementById('search-input').value = ""; 
-            currentSearch = ""; 
+            const searchInput = document.getElementById('search-input');
+            if(searchInput) searchInput.value = "";
+            currentSearch = "";
             renderChampionList();
         };
         bar.appendChild(btn);
@@ -86,18 +91,14 @@ function getChoseong(str) {
     const code = str.charCodeAt(0) - 44032;
     if (code < 0 || code > 11171) return "";
     const initialIndex = Math.floor(code / 588);
-    const initial = HANGUL_INITIALS[initialIndex];
-    if (initial === 'ㄲ') return 'ㄱ';
-    if (initial === 'ㄸ') return 'ㄷ';
-    if (initial === 'ㅃ') return 'ㅂ';
-    if (initial === 'ㅆ') return 'ㅅ';
-    if (initial === 'ㅉ') return 'ㅈ';
-    return initial;
+    return HANGUL_INITIALS[initialIndex] || "";
 }
 
 function renderChampionList() {
     const grid = document.getElementById('champion-grid');
+    if(!grid) return;
     grid.innerHTML = "";
+    
     let champList = Object.values(champions);
     champList.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
 
@@ -107,14 +108,23 @@ function renderChampionList() {
             const initial = getChoseong(champ.name);
             if (initial !== currentConsonant) return;
         }
+        
         const item = document.createElement('div');
         item.className = 'champ-item';
-        item.onclick = () => selectChampion(champ.id);
+        // 클릭 시 챔피언 선택
+        item.onclick = () => {
+            selectChampion(champ.id);
+            // 사이드바 닫기
+            document.getElementById('sidebar').classList.remove('open');
+        };
+        
         const img = document.createElement('img');
         img.src = `https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champ.image.full}`;
         img.loading = "lazy";
+        
         const name = document.createElement('span');
         name.innerText = champ.name;
+        
         item.appendChild(img);
         item.appendChild(name);
         grid.appendChild(item);
@@ -130,36 +140,41 @@ function selectChampion(champId) {
 function loadChampionDetail(slotId) {
     const slot = slots[slotId];
     if (!slot.data) return;
-    const container = document.getElementById(`slot-${slotId}`);
     
+    // 오버라이드 적용
     const data = JSON.parse(JSON.stringify(slot.data));
-
     if (COOLDOWN_OVERRIDES[data.id]) {
         const overrides = COOLDOWN_OVERRIDES[data.id];
         Object.keys(overrides).forEach(idx => {
-            if (data.spells[idx]) {
-                data.spells[idx].cooldown = overrides[idx];
-            }
+            if (data.spells[idx]) data.spells[idx].cooldown = overrides[idx];
         });
     }
 
-    container.querySelector('.empty-state').style.display = 'none';
-    const header = container.querySelector('.slot-header');
-    header.style.display = 'flex';
-    header.innerHTML = `
-        <img src="https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${data.image.full}">
-        <div><h1>${data.name}</h1><p>${data.title}</p></div>
-    `;
+    // --- 수정된 부분: 에러 없이 헤더 정보 업데이트 ---
+    const holder = document.getElementById(`holder-${slotId}`);
+    const img = document.getElementById(`img-champ-${slotId}`);
+    const nameEl = document.getElementById(`name-champ-${slotId}`);
+    const titleEl = document.getElementById(`title-champ-${slotId}`);
 
+    if (holder) holder.style.display = 'none'; // 물음표 숨김
+    if (img) {
+        img.src = `https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${data.image.full}`;
+        img.style.display = 'block'; // 이미지 보이기
+    }
+    if (nameEl) nameEl.innerText = data.name;
+    if (titleEl) titleEl.innerText = data.title;
+    // ------------------------------------------------
+
+    // 스킬 목록 생성
     const skillsContainer = document.getElementById(`skills-${slotId}`);
-    skillsContainer.innerHTML = "";
-    skillsContainer.className = ""; 
-
-    skillsContainer.innerHTML += createSkillHTML(data.passive, "P", false, -1, slotId);
-    data.spells.forEach((spell, idx) => {
-        const key = ["Q", "W", "E", "R"][idx];
-        skillsContainer.innerHTML += createSkillHTML(spell, key, true, idx, slotId);
-    });
+    if (skillsContainer) {
+        skillsContainer.innerHTML = "";
+        skillsContainer.innerHTML += createSkillHTML(data.passive, "P", false, -1, slotId);
+        data.spells.forEach((spell, idx) => {
+            const key = ["Q", "W", "E", "R"][idx];
+            skillsContainer.innerHTML += createSkillHTML(spell, key, true, idx, slotId);
+        });
+    }
 
     addTooltipEvents();
     updateCooldownsInSlot(slotId);
@@ -172,31 +187,25 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
 
     let cooldownUI = '';
     
+    // 쿨타임 데이터 처리
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
     const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
 
-    // ★ 안전한 변수 선언: 모바일 오류 방지용
     let isStatic = false;
     if (data.cooldown && Array.isArray(data.cooldown) && data.cooldown.length > 0) {
         isStatic = data.cooldown.every(v => v === data.cooldown[0]);
     }
 
     if (data.cooldown) {
-        let timeLabel = '쿨타임';
-        if (isAmmo) timeLabel = '1회 충전 시간';
-        if (isPassive) timeLabel = '재사용 대기시간';
-
-        let textClass = "";
-        if (isAmmo) textClass = "ammo-text";
-        if (isPassive) textClass = "passive-text";
+        let timeLabel = isAmmo ? '1회 충전' : '쿨타임';
+        if (isPassive) timeLabel = '재사용 대기';
+        let textClass = isAmmo ? "ammo-text" : (isPassive ? "passive-text" : "");
 
         if (isAllLevelView) {
-            // ★ 수정됨: 텍스트 제거, 숫자 색상만 적용
             if (isStatic) {
-                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 cooldownUI = `
-                    ${tableTitle}
+                    <div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>
                     <div class="cd-value ${textClass}" 
                          style="font-size:18px; font-weight:bold; color:#0ac8f6;" 
                          data-base-cd="${data.cooldown[0]}" 
@@ -208,44 +217,26 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
                 let rows = data.cooldown.map(cd => 
                     `<td class="cd-value ${textClass}" data-base-cd="${cd}" data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</td>`
                 ).join('');
-                
-                const tableTitle = (isAmmo || isPassive) ? `<div style="font-size:12px; margin-bottom:4px;" class="${textClass}">* ${timeLabel}</div>` : '';
-
                 cooldownUI = `
-                    ${tableTitle}
+                    <div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>
                     <table class="all-levels-table">
                         <thead><tr>${headers}</tr></thead>
                         <tbody><tr>${rows}</tr></tbody>
                     </table>`;
             }
         } else {
-            let buttons = isStatic 
-                ? '<span style="color:#555; font-size:13px;">전 구간 동일</span>'
-                : data.cooldown.map((_, i) => 
-                    `<button class="lvl-btn ${i===0?'active':''}" onclick="changeLevel(this, ${slotId}, ${index}, ${i})">${i+1}</button>`
-                  ).join('');
-            
-            cooldownUI = `
-                <div class="level-selector" data-current-level="0" data-spell-index="${index}">${buttons}</div>
-                <div style="font-size:13px; color:#666; margin-top:4px;">${timeLabel}</div>
-                <div class="main-cooldown ${textClass}" id="display-cd-${slotId}-${index}" 
-                     data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</div>
-            `;
+             // 개별 레벨 보기 모드 (간소화)
+             cooldownUI = `<div style="color:#888;">한눈에 보기를 켜주세요.</div>`;
         }
     } else {
-        cooldownUI = '<div style="color:#555; font-size:13px; margin-top:8px;">쿨타임 없음</div>';
+        cooldownUI = '<div style="color:#555; font-size:12px;">쿨타임 없음</div>';
     }
 
     let tags = [];
-    const text = (data.description || "") + (data.tooltip || "");
-    if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
+    if ((data.description + data.tooltip).includes('토글')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
-    
-    // ★ 뱃지 추가 (CSS 필요)
-    if (isStatic) {
-        tags.push('<span class="tag static">전 구간 동일</span>');
-    }
+    if (isStatic && data.cooldown) tags.push('<span class="tag static">전 구간 동일</span>');
 
     return `
         <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
@@ -267,63 +258,43 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
 function updateCooldownsInSlot(slotId) {
     const slot = slots[slotId];
     
-    document.getElementById(`input-haste-${slotId}`).value = slot.haste;
-    document.getElementById(`input-ult-${slotId}`).value = slot.ultHaste;
+    const hInput = document.getElementById(`input-haste-${slotId}`);
+    const uInput = document.getElementById(`input-ult-${slotId}`);
+    if(hInput) hInput.value = slot.haste;
+    if(uInput) uInput.value = slot.ultHaste;
     
     const baseCdr = 1 - (100 / (100 + slot.haste));
     const ultCdr = 1 - (100 / (100 + slot.haste + slot.ultHaste));
     
-    document.getElementById(`disp-cdr-${slotId}`).innerText = `${(baseCdr*100).toFixed(0)}%`;
-    document.getElementById(`disp-ult-cdr-${slotId}`).innerText = `R ${(ultCdr*100).toFixed(0)}%`;
+    const dispCdr = document.getElementById(`disp-cdr-${slotId}`);
+    const dispUlt = document.getElementById(`disp-ult-cdr-${slotId}`);
+    if(dispCdr) dispCdr.innerText = `${(baseCdr*100).toFixed(0)}%`;
+    if(dispUlt) dispUlt.innerText = `R ${(ultCdr*100).toFixed(0)}%`;
 
     if (!slot.data) return;
 
+    // 스킬 쿨타임 계산 업데이트
     const skillsDiv = document.getElementById(`skills-${slotId}`);
-    skillsDiv.querySelectorAll('[id^="base-cd-"]').forEach(baseEl => {
-        const parts = baseEl.id.split('-'); 
-        const spellIdx = parseInt(parts[3]);
+    if (skillsDiv) {
+        skillsDiv.querySelectorAll('[id^="base-cd-"]').forEach(baseEl => {
+            const parts = baseEl.id.split('-'); 
+            const spellIdx = parseInt(parts[3]);
+            const baseCooldowns = JSON.parse(baseEl.innerText);
+            
+            let totalHaste = (spellIdx === 3) ? (slot.haste + slot.ultHaste) : slot.haste;
+            if (spellIdx === -1) totalHaste = 0; // 패시브 제외
 
-        const baseCooldowns = JSON.parse(baseEl.innerText);
-        let totalHaste = (spellIdx === 3) ? (slot.haste + slot.ultHaste) : slot.haste;
-        if (spellIdx === -1) totalHaste = 0;
-
-        if (isAllLevelView) {
             const card = baseEl.closest('.skill-card');
-            card.querySelectorAll('.cd-value').forEach((el, i) => {
-                const isPassive = el.dataset.isPassive === "true";
-                const appliedHaste = isPassive ? 0 : totalHaste;
-                // 안전하게 접근
-                const cdVal = baseCooldowns[i] !== undefined ? baseCooldowns[i] : baseCooldowns[0];
-                el.innerText = calculateCDR(cdVal, appliedHaste) + "초";
-            });
-        } else {
-            const display = document.getElementById(`display-cd-${slotId}-${spellIdx}`);
-            if (display) {
-                const wrapper = display.parentElement;
-                const selector = wrapper.querySelector('.level-selector');
-                const lvl = parseInt(selector.dataset.currentLevel || 0);
-                const safeIdx = Math.min(lvl, baseCooldowns.length - 1);
-                
-                const isAmmo = display.dataset.isAmmo === "true";
-                const isPassive = display.dataset.isPassive === "true";
-
-                let suffix = "초";
-                if (isAmmo) suffix = "초 (충전)";
-                if (isPassive) suffix = "초 (고정)";
-
-                const appliedHaste = isPassive ? 0 : totalHaste;
-                display.innerText = calculateCDR(baseCooldowns[safeIdx], appliedHaste) + suffix;
+            if (card) {
+                card.querySelectorAll('.cd-value').forEach((el, i) => {
+                    const isPassive = el.dataset.isPassive === "true";
+                    const appliedHaste = isPassive ? 0 : totalHaste;
+                    const cdVal = baseCooldowns[i] !== undefined ? baseCooldowns[i] : baseCooldowns[0];
+                    el.innerText = calculateCDR(cdVal, appliedHaste) + "초";
+                });
             }
-        }
-    });
-}
-
-window.changeLevel = function(btn, slotId, spellIdx, lvlIdx) {
-    const parent = btn.parentElement;
-    parent.querySelectorAll('.lvl-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    parent.dataset.currentLevel = lvlIdx;
-    updateCooldownsInSlot(slotId);
+        });
+    }
 }
 
 function calculateCDR(baseCd, haste) {
@@ -338,125 +309,13 @@ function escapeHtml(text) {
 }
 
 function addTooltipEvents() {
-    const tooltip = document.getElementById('tooltip');
-    if(!tooltip) return; 
-    
-    document.querySelectorAll('.skill-card').forEach(card => {
-        card.addEventListener('mouseenter', e => {
-            const name = card.dataset.name;
-            const desc = card.dataset.desc;
-            tooltip.innerHTML = `<strong>${name}</strong><br><br>${desc}`;
-            tooltip.classList.remove('hidden');
-        });
-        card.addEventListener('mousemove', e => {
-            tooltip.style.left = e.pageX + 20 + 'px';
-            tooltip.style.top = e.pageY + 20 + 'px';
-        });
-        card.addEventListener('mouseleave', () => {
-            tooltip.classList.add('hidden');
-        });
-    });
-}
-
-function setupEventListeners() {
-    // 1. 검색창 (사이드바 내부)
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            currentSearch = e.target.value;
-            if(currentSearch) {
-                currentConsonant = 'ALL';
-                const btns = document.querySelectorAll('.filter-btn');
-                if (btns.length > 0) {
-                    btns.forEach(b => b.classList.remove('active'));
-                    const allBtn = document.querySelector('.filter-btn[data-key="전체"]');
-                    if (allBtn) allBtn.classList.add('active');
-                }
-            }
-            renderChampionList();
-        });
-    }
-
-    // 2. 챔피언 슬롯 선택 (메인 화면)
-    const slots = document.querySelectorAll('.champion-slot');
-    if (slots.length > 0) {
-        slots.forEach(slot => {
-            slot.addEventListener('click', (e) => {
-                // 버튼이나 입력창을 눌렀을 때는 슬롯 선택이 바뀌지 않도록 방지
-                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-                
-                activeSlot = parseInt(slot.id.split('-')[1]);
-                document.querySelectorAll('.champion-slot').forEach(el => el.classList.remove('active'));
-                slot.classList.add('active');
-            });
-        });
-    }
-
-    // 3. 모바일 사이드바 열기/닫기 (★ 이 부분이 안 되던 부분입니다)
-    const sidebar = document.getElementById('sidebar');
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const closeBtn = document.getElementById('sidebar-close-btn');
-
-    // (1) 열기 버튼 클릭 시
-    if (menuBtn && sidebar) {
-        menuBtn.addEventListener('click', () => {
-            console.log("메뉴 버튼 클릭됨!"); // 디버깅용
-            sidebar.classList.add('open');
-        });
-    } else {
-        console.error("메뉴 버튼이나 사이드바를 찾을 수 없습니다.");
-    }
-
-    // (2) 닫기 버튼 클릭 시
-    if (closeBtn && sidebar) {
-        closeBtn.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-        });
-    }
-
-    // (3) 챔피언 목록에서 아이콘 클릭 시 사이드바 닫기
-    const grid = document.getElementById('champion-grid');
-    if (grid) {
-        grid.addEventListener('click', (e) => {
-            if (e.target.closest('.champ-item')) {
-                sidebar.classList.remove('open');
-            }
-        });
-    }
-
-    // 4. 초기화(Reset) 버튼들
-    [1, 2].forEach(id => {
-        setupControl(id, 'haste');
-        setupControl(id, 'ult');
-        
-        const resetBtn = document.getElementById(`btn-reset-${id}`);
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                if (slots[id]) { 
-                    slots[id].haste = 0; 
-                    slots[id].ultHaste = 0;
-                    updateCooldownsInSlot(id);
-                }
-            });
-        }
-    });
-
-    // 5. 보기 방식 토글 (한눈에 보기)
-    const viewToggleMobile = document.getElementById('view-toggle-mobile');
-    if (viewToggleMobile) {
-        viewToggleMobile.addEventListener('change', (e) => {
-            isAllLevelView = e.target.checked;
-            loadChampionDetail(1);
-            loadChampionDetail(2);
-        });
-    }
+    // 모바일에서는 툴팁 생략하거나 터치 시 표시 로직 추가 가능
+    // 현재는 단순 구현만 유지
 }
 
 function setupControl(slotId, type) {
     const inputId = `input-${type}-${slotId}`;
     const input = document.getElementById(inputId);
-    
-    // 입력창(input)이 HTML에 없으면 함수 종료 (에러 방지)
     if (!input) return;
 
     const key = type === 'haste' ? 'haste' : 'ultHaste';
@@ -464,25 +323,72 @@ function setupControl(slotId, type) {
     input.addEventListener('change', (e) => {
         let val = parseInt(e.target.value) || 0;
         if (val < 0) val = 0;
-        if (slots[slotId]) {
-            slots[slotId][key] = val;
-            updateCooldownsInSlot(slotId);
-        }
+        slots[slotId][key] = val;
+        updateCooldownsInSlot(slotId);
     });
 
-    // +/- 버튼 연결
+    // +/- 버튼
     const parent = input.closest('.control-unit');
     if (parent) {
         parent.querySelectorAll('button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const delta = parseInt(btn.dataset.val);
-                if (slots[slotId]) {
-                    slots[slotId][key] = Math.max(0, slots[slotId][key] + delta);
-                    updateCooldownsInSlot(slotId);
-                }
+                slots[slotId][key] = Math.max(0, slots[slotId][key] + delta);
+                updateCooldownsInSlot(slotId);
             });
         });
     }
 }
 
+function setupEventListeners() {
+    // 1. 사이드바 검색창
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderChampionList();
+        });
+    }
+
+    // 2. 사이드바 열기/닫기
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+    const sidebar = document.getElementById('sidebar');
+
+    if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+        });
+    }
+    if (closeBtn && sidebar) {
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+    }
+
+    // 3. 한눈에 보기 토글
+    const viewToggle = document.getElementById('view-toggle-mobile');
+    if (viewToggle) {
+        viewToggle.addEventListener('change', (e) => {
+            isAllLevelView = e.target.checked;
+            loadChampionDetail(1);
+        });
+    }
+
+    // 4. 초기화 버튼
+    const resetBtn = document.getElementById('btn-reset-1');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            slots[1].haste = 0;
+            slots[1].ultHaste = 0;
+            updateCooldownsInSlot(1);
+        });
+    }
+
+    // 5. 컨트롤 설정
+    setupControl(1, 'haste');
+    setupControl(1, 'ult');
+}
+
+// 시작
 init();
