@@ -359,14 +359,13 @@ function addTooltipEvents() {
 }
 
 function setupEventListeners() {
-    // 1. 검색창 (있을 때만 동작)
+    // 1. 검색창 (사이드바 내부)
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             currentSearch = e.target.value;
             if(currentSearch) {
                 currentConsonant = 'ALL';
-                // 필터 버튼 초기화
                 const btns = document.querySelectorAll('.filter-btn');
                 if (btns.length > 0) {
                     btns.forEach(b => b.classList.remove('active'));
@@ -378,12 +377,14 @@ function setupEventListeners() {
         });
     }
 
-    // 2. 챔피언 슬롯 클릭 (있을 때만 동작)
+    // 2. 챔피언 슬롯 선택 (메인 화면)
     const slots = document.querySelectorAll('.champion-slot');
     if (slots.length > 0) {
         slots.forEach(slot => {
             slot.addEventListener('click', (e) => {
+                // 버튼이나 입력창을 눌렀을 때는 슬롯 선택이 바뀌지 않도록 방지
                 if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                
                 activeSlot = parseInt(slot.id.split('-')[1]);
                 document.querySelectorAll('.champion-slot').forEach(el => el.classList.remove('active'));
                 slot.classList.add('active');
@@ -391,49 +392,39 @@ function setupEventListeners() {
         });
     }
 
-    // 3. 모드 토글 (단일/비교 모드) - 모바일에 없으면 무시
-    const modeToggle = document.getElementById('mode-toggle');
-    if (modeToggle) {
-        modeToggle.addEventListener('change', (e) => {
-            const container = document.querySelector('.detail-container');
-            const labels = document.querySelectorAll('.mode-switch-wrapper .mode-label');
-            const slot2 = document.getElementById('slot-2');
-            
-            if (e.target.checked) {
-                if(container) container.classList.remove('single-mode');
-                if(labels.length > 1) { labels[0].classList.remove('active-text'); labels[1].classList.add('active-text'); }
-                if(slot2) slot2.style.display = 'flex'; 
-            } else {
-                if(container) container.classList.add('single-mode');
-                if(labels.length > 1) { labels[0].classList.add('active-text'); labels[1].classList.remove('active-text'); }
-                if(slot2) slot2.style.display = 'none';
-                
-                activeSlot = 1;
-                const slot1 = document.getElementById('slot-1');
-                if(slot1) slot1.classList.add('active');
+    // 3. 모바일 사이드바 열기/닫기 (★ 이 부분이 안 되던 부분입니다)
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+
+    // (1) 열기 버튼 클릭 시
+    if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', () => {
+            console.log("메뉴 버튼 클릭됨!"); // 디버깅용
+            sidebar.classList.add('open');
+        });
+    } else {
+        console.error("메뉴 버튼이나 사이드바를 찾을 수 없습니다.");
+    }
+
+    // (2) 닫기 버튼 클릭 시
+    if (closeBtn && sidebar) {
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+    }
+
+    // (3) 챔피언 목록에서 아이콘 클릭 시 사이드바 닫기
+    const grid = document.getElementById('champion-grid');
+    if (grid) {
+        grid.addEventListener('click', (e) => {
+            if (e.target.closest('.champ-item')) {
+                sidebar.classList.remove('open');
             }
         });
     }
 
-    // 4. 레벨 보기 토글 (전체 레벨/현재 레벨) - 없으면 무시
-    const viewToggle = document.getElementById('view-toggle');
-    if (viewToggle) {
-        viewToggle.addEventListener('change', (e) => {
-            isAllLevelView = e.target.checked;
-            const labels = document.querySelectorAll('.view-toggle-wrapper .mode-label');
-            if (labels.length > 1) {
-                if(isAllLevelView) {
-                    labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');
-                } else {
-                    labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
-                }
-            }
-            loadChampionDetail(1);
-            loadChampionDetail(2);
-        });
-    }
-
-    // 5. 초기화(Reset) 버튼들
+    // 4. 초기화(Reset) 버튼들
     [1, 2].forEach(id => {
         setupControl(id, 'haste');
         setupControl(id, 'ult');
@@ -441,7 +432,7 @@ function setupEventListeners() {
         const resetBtn = document.getElementById(`btn-reset-${id}`);
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-                if (slots[id]) { // 전역 변수 slots 체크
+                if (slots[id]) { 
                     slots[id].haste = 0; 
                     slots[id].ultHaste = 0;
                     updateCooldownsInSlot(id);
@@ -450,31 +441,13 @@ function setupEventListeners() {
         }
     });
 
-    // 6. 모바일 사이드바 (검색창) 열기/닫기
-    const sidebar = document.getElementById('sidebar');
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const closeBtn = document.getElementById('sidebar-close-btn');
-
-    if (menuBtn && sidebar) {
-        menuBtn.addEventListener('click', () => {
-            sidebar.classList.add('open');
-        });
-    }
-
-    if (closeBtn && sidebar) {
-        closeBtn.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-        });
-    }
-
-    // 챔피언 클릭 시 사이드바 닫기 (champion-grid 내부 클릭 감지)
-    const grid = document.getElementById('champion-grid');
-    if (grid) {
-        grid.addEventListener('click', (e) => {
-            // champ-item이나 그 내부 이미지를 클릭했을 때만 닫기
-            if (e.target.closest('.champ-item')) {
-                sidebar.classList.remove('open');
-            }
+    // 5. 보기 방식 토글 (한눈에 보기)
+    const viewToggleMobile = document.getElementById('view-toggle-mobile');
+    if (viewToggleMobile) {
+        viewToggleMobile.addEventListener('change', (e) => {
+            isAllLevelView = e.target.checked;
+            loadChampionDetail(1);
+            loadChampionDetail(2);
         });
     }
 }
