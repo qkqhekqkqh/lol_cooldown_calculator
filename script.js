@@ -13,27 +13,26 @@ let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// ★ API 데이터가 0초로 나오거나 충전 시간을 표시해야 하는 스킬들 대거 추가
-// Q=0, W=1, E=2, R=3
+// API 데이터가 0초로 나오거나 충전 시간을 표시해야 하는 스킬들 예외 처리
 const COOLDOWN_OVERRIDES = {
-    "Gangplank": { 2: [18, 17, 16, 15, 14] }, // E 화약통
-    "Teemo": { 3: [30, 25, 20] },             // R 버섯
-    "Corki": { 3: [12, 11, 10] },             // R 미사일
-    "Akali": { 3: [100, 80, 60] },            // R (가끔 0 표기됨)
-    "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, // Q 포탑
-    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  // W 덫
-    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         // E 펀치
-    "Ashe": { 2: [90, 80, 70, 60, 50] },         // E 매
-    "Kalista": { 1: [30, 30, 30, 30, 30] },      // W 감시하는 혼
-    "Ivern": { 1: [40, 36, 32, 28, 24] },        // W 수풀
-    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },    // E 돌진
-    "Taric": { 0: [15, 15, 15, 15, 15] },        // Q 스택 충전 (기본 15초)
-    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },    // Q 붕대 (2충전)
-    "Velkoz": { 1: [19, 18, 17, 16, 15] },       // W 균열
-    "Jhin": { 2: [28, 25, 22, 19, 16] },         // E 강제 관람
-    "Rumble": { 2: [6, 6, 6, 6, 6] },            // E 작살
-    "Zyra": { 1: [18, 16, 14, 12, 10] },         // W 씨앗
-    "Xerath": { 3: [130, 115, 100] }             // R (가끔 탄환 수만 나와서 고정값 입력)
+    "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
+    "Teemo": { 3: [30, 25, 20] },             
+    "Corki": { 3: [12, 11, 10] },             
+    "Akali": { 3: [100, 80, 60] },            
+    "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, 
+    "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  
+    "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         
+    "Ashe": { 2: [90, 80, 70, 60, 50] },         
+    "Kalista": { 1: [30, 30, 30, 30, 30] },      
+    "Ivern": { 1: [40, 36, 32, 28, 24] },        
+    "Nilah": { 2: [26, 22.5, 19, 15.5, 12] },    
+    "Taric": { 0: [15, 15, 15, 15, 15] },        
+    "Amumu": { 0: [16, 15.5, 15, 14.5, 14] },    
+    "Velkoz": { 1: [19, 18, 17, 16, 15] },       
+    "Jhin": { 2: [28, 25, 22, 19, 16] },         
+    "Rumble": { 2: [6, 6, 6, 6, 6] },            
+    "Zyra": { 1: [18, 16, 14, 12, 10] },         
+    "Xerath": { 3: [130, 115, 100] }             
 };
 
 async function init() {
@@ -42,7 +41,6 @@ async function init() {
         const versions = await verRes.json();
         currentVersion = versions[0];
         
-        // 버전 표기 계산 (Major + 10)
         const parts = currentVersion.split('.');
         if (parts.length >= 2) {
             const major = parseInt(parts[0]) + 10;
@@ -139,10 +137,8 @@ function loadChampionDetail(slotId) {
     if (!slot.data) return;
     const container = document.getElementById(`slot-${slotId}`);
     
-    // 데이터 복사
     const data = JSON.parse(JSON.stringify(slot.data));
 
-    // ★ [적용] 예외 데이터(쿨타임 충전시간) 덮어쓰기
     if (COOLDOWN_OVERRIDES[data.id]) {
         const overrides = COOLDOWN_OVERRIDES[data.id];
         Object.keys(overrides).forEach(idx => {
@@ -182,13 +178,13 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
 
     let cooldownUI = '';
     
-    // API에 maxammo가 명시되어 있거나, 수동으로 입력한 리스트에 해당하면 충전형으로 간주
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
     const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
 
     if (data.cooldown) {
         const isStatic = data.cooldown.every(v => v === data.cooldown[0]);
+
         let timeLabel = '쿨타임';
         if (isAmmo) timeLabel = '1회 충전 시간';
         if (isPassive) timeLabel = '재사용 대기시간 (고정)';
@@ -198,19 +194,35 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isPassive) textClass = "passive-text";
 
         if (isAllLevelView) {
-            let headers = data.cooldown.map((_, i) => `<th>Lv${i+1}</th>`).join('');
-            let rows = data.cooldown.map(cd => 
-                `<td class="cd-value ${textClass}" data-base-cd="${cd}" data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</td>`
-            ).join('');
-            
-            const tableTitle = (isAmmo || isPassive) ? `<div style="font-size:12px; margin-bottom:4px;" class="${textClass}">* ${timeLabel}</div>` : '';
+            // 쿨타임 전 구간 동일 시
+            if (isStatic) {
+                // [원복] 라벨 색상 원래대로 (color: #666;)
+                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel} (전 구간 동일)</div>`;
+                
+                // ★ [수정] 쿨타임 숫자 색상 적용 (color: #0ac8f6;)
+                cooldownUI = `
+                    ${tableTitle}
+                    <div class="cd-value ${textClass}" 
+                         style="font-size:18px; font-weight:bold; color:#0ac8f6;" 
+                         data-base-cd="${data.cooldown[0]}" 
+                         data-is-ammo="${isAmmo}" 
+                         data-is-passive="${isPassive}">--</div>
+                `;
+            } else {
+                let headers = data.cooldown.map((_, i) => `<th>Lv${i+1}</th>`).join('');
+                let rows = data.cooldown.map(cd => 
+                    `<td class="cd-value ${textClass}" data-base-cd="${cd}" data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</td>`
+                ).join('');
+                
+                const tableTitle = (isAmmo || isPassive) ? `<div style="font-size:12px; margin-bottom:4px;" class="${textClass}">* ${timeLabel}</div>` : '';
 
-            cooldownUI = `
-                ${tableTitle}
-                <table class="all-levels-table">
-                    <thead><tr>${headers}</tr></thead>
-                    <tbody><tr>${rows}</tr></tbody>
-                </table>`;
+                cooldownUI = `
+                    ${tableTitle}
+                    <table class="all-levels-table">
+                        <thead><tr>${headers}</tr></thead>
+                        <tbody><tr>${rows}</tr></tbody>
+                    </table>`;
+            }
         } else {
             let buttons = isStatic 
                 ? '<span style="color:#555; font-size:13px;">전 구간 동일</span>'
@@ -233,7 +245,7 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const text = (data.description || "") + (data.tooltip || "");
     if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
-    if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`); // 충전형 태그
+    if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
 
     return `
         <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
@@ -277,10 +289,10 @@ function updateCooldownsInSlot(slotId) {
 
         if (isAllLevelView) {
             const card = baseEl.closest('.skill-card');
-            card.querySelectorAll('.cd-value').forEach((td, i) => {
-                const isPassive = td.dataset.isPassive === "true";
+            card.querySelectorAll('.cd-value').forEach((el, i) => {
+                const isPassive = el.dataset.isPassive === "true";
                 const appliedHaste = isPassive ? 0 : totalHaste;
-                td.innerText = calculateCDR(baseCooldowns[i], appliedHaste) + "초";
+                el.innerText = calculateCDR(baseCooldowns[i], appliedHaste) + "초";
             });
         } else {
             const display = document.getElementById(`display-cd-${slotId}-${spellIdx}`);
@@ -368,7 +380,7 @@ function setupEventListeners() {
         if (e.target.checked) {
             container.classList.remove('single-mode');
             labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');    
-            document.getElementById('slot-2').style.display = 'block'; 
+            document.getElementById('slot-2').style.display = 'flex'; 
         } else {
             container.classList.add('single-mode');
             labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
