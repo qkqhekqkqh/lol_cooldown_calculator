@@ -172,6 +172,20 @@ body { background-color: var(--bg); color: var(--text-main); padding-bottom: 20p
 .main-cooldown.ammo-text { color: #ffab40; }
 .main-cooldown.passive-text { color: #aaa; }
 
+/* [전 구간 동일] 뱃지 스타일 */
+.tag.static {
+    display: inline-block;     /* 줄바꿈 없이 배치 */
+    background: #1f2937;       /* 아주 어두운 회색 배경 */
+    color: #9ca3af;            /* 차분한 회색 글씨 */
+    border: 1px solid #374151; /* 얇은 테두리 */
+    padding: 2px 6px;          /* 뱃지 안쪽 여백 */
+    border-radius: 4px;        /* 둥근 모서리 */
+    font-size: 11px;           /* 글자 크기 */
+    font-weight: bold;         /* 글자 굵게 */
+    margin-left: 4px;          /* 왼쪽 간격 */
+    vertical-align: middle;    /* 텍스트 높이 정렬 */
+}
+
 /* 쿨타임 표시 (표형) */
 .all-levels-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 12px; text-align: center; }
 .all-levels-table th { background: #2a2e3f; color: #aaa; padding: 4px; border: 1px solid #3d4960; font-weight: normal; font-size: 10px; }
