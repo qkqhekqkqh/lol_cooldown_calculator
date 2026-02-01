@@ -39,14 +39,21 @@ async function init() {
         const versions = await verRes.json();
         currentVersion = versions[0];
         
-        const parts = currentVersion.split('.');
-        if (parts.length >= 2) {
-            const major = parseInt(parts[0]) + 10;
-            const minor = parts[1];
-            document.getElementById('version-display').innerText = `Patch ${major}.${minor}`;
-        } else {
-            document.getElementById('version-display').innerText = `Patch ${currentVersion}`;
+        // ★ 수정된 부분 시작: 요소를 찾아서 변수에 담습니다.
+        const versionEl = document.getElementById('version-display');
+        
+        // 요소가 있을 때만 텍스트를 변경합니다. (없으면 에러 없이 무시함)
+        if (versionEl) {
+            const parts = currentVersion.split('.');
+            if (parts.length >= 2) {
+                const major = parseInt(parts[0]) + 10;
+                const minor = parts[1];
+                versionEl.innerText = `Patch ${major}.${minor}`;
+            } else {
+                versionEl.innerText = `Patch ${currentVersion}`;
+            }
         }
+        // ★ 수정된 부분 끝
 
         const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/data/ko_KR/championFull.json`);
         const champData = await champRes.json();
@@ -58,7 +65,7 @@ async function init() {
         
     } catch (e) {
         console.error("데이터 로딩 실패:", e);
-        alert("챔피언 데이터를 불러오는데 실패했습니다.");
+        // 모바일에서는 alert가 귀찮을 수 있으니 콘솔에만 찍거나 조용히 넘어가도 됩니다.
     }
 }
 
