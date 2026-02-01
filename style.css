@@ -253,14 +253,28 @@ input[type=number] { -moz-appearance: textfield; }
 .lvl-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
 
 .main-cooldown { font-size: 32px; font-weight: bold; color: var(--accent); margin-top: 8px; white-space: nowrap; }
+/* 태그 공통 스타일 (기존에 있다면 유지) */
+.tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 4px;
+    vertical-align: middle;
+}
 
-.tags { display: flex; gap: 6px; }
-.tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #555; color: #aaa; }
-.tag.toggle { background: rgba(83, 82, 237, 0.2); color: #5352ed; border-color: #5352ed; }
-.tag.passive { background: #444; color: #aaa; border-color: #666; }
-.tag.ammo { background: rgba(255, 159, 67, 0.1); color: var(--ammo-color); border-color: var(--ammo-color); }
-.tag.static { background: #374151; color: #f3f4f6; border: 1px solid #4b5563; }
+/* 기존 태그들 색상 */
+.tag.toggle { background: #374151; color: #fbbf24; }
+.tag.passive { background: #374151; color: #e5e7eb; }
+.tag.ammo { background: #374151; color: #34d399; }
 
+/* ★ [전 구간 동일] 뱃지 스타일 (새로 추가) ★ */
+.tag.static {
+    background: #1f2937;       /* 아주 어두운 회색 */
+    color: #9ca3af;            /* 차분한 회색 텍스트 */
+    border: 1px solid #374151; /* 얇은 테두리 */
+}
 .hidden { display: none !important; }
 .tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid var(--border); padding: 16px; border-radius: 6px; width: 340px; color: #ddd; font-size: 14px; pointer-events: none; z-index: 1000; line-height: 1.5; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
 

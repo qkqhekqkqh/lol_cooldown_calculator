@@ -7,13 +7,11 @@ let slots = {
 let activeSlot = 1;
 let isAllLevelView = true; 
 
-// 자음 필터 설정
 let currentSearch = "";
 let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// API 데이터 예외 처리
 const COOLDOWN_OVERRIDES = {
     "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
     "Teemo": { 3: [30, 25, 20] },             
@@ -67,13 +65,11 @@ async function init() {
 function createFilterButtons() {
     const bar = document.getElementById('filter-bar');
     bar.innerHTML = "";
-
     FILTER_KEYS.forEach(key => {
         const btn = document.createElement('div');
         btn.className = `filter-btn ${key === '전체' ? 'active all-btn' : ''}`;
         btn.innerText = key;
         btn.dataset.key = key;
-        
         btn.onclick = () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -111,7 +107,6 @@ function renderChampionList() {
             const initial = getChoseong(champ.name);
             if (initial !== currentConsonant) return;
         }
-
         const item = document.createElement('div');
         item.className = 'champ-item';
         item.onclick = () => selectChampion(champ.id);
@@ -161,7 +156,6 @@ function loadChampionDetail(slotId) {
     skillsContainer.className = ""; 
 
     skillsContainer.innerHTML += createSkillHTML(data.passive, "P", false, -1, slotId);
-
     data.spells.forEach((spell, idx) => {
         const key = ["Q", "W", "E", "R"][idx];
         skillsContainer.innerHTML += createSkillHTML(spell, key, true, idx, slotId);
@@ -181,9 +175,12 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
     const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
-
-    // 고정 쿨타임 여부 확인
-    const isStatic = data.cooldown && data.cooldown.every(v => v === data.cooldown[0]);
+    
+    // ★ 안전한 변수 선언: 데이터가 없으면 false로 처리
+    let isStatic = false;
+    if (data.cooldown && Array.isArray(data.cooldown) && data.cooldown.length > 0) {
+        isStatic = data.cooldown.every(v => v === data.cooldown[0]);
+    }
 
     if (data.cooldown) {
         let timeLabel = '쿨타임';
@@ -195,12 +192,11 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isPassive) textClass = "passive-text";
 
         if (isAllLevelView) {
-            // 쿨타임 전 구간 동일 시
+            // ★ 수정됨: 전 구간 동일(isStatic)이면 라벨 깔끔하게, 숫자만 하늘색
             if (isStatic) {
-                // 라벨에는 "전 구간 동일" 텍스트 제거 (뱃지로 이동)
+                // 라벨에는 (전 구간 동일) 텍스트 제거 -> 뱃지로 이동
                 const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 
-                // 숫자는 하늘색(#0ac8f6)
                 cooldownUI = `
                     ${tableTitle}
                     <div class="cd-value ${textClass}" 
@@ -242,16 +238,15 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         cooldownUI = '<div style="color:#555; font-size:13px; margin-top:8px;">쿨타임 없음</div>';
     }
 
-    // 태그(뱃지) 생성 로직
+    // 태그(뱃지) 생성
     let tags = [];
     const text = (data.description || "") + (data.tooltip || "");
-    
     if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
     
-    // ★ [추가] 쿨타임이 존재하고, 전 구간 동일하다면 뱃지 추가
-    if (data.cooldown && isStatic) {
+    // ★ 여기서 뱃지 추가 (CSS 필요)
+    if (isStatic) {
         tags.push('<span class="tag static">전 구간 동일</span>');
     }
 
@@ -300,7 +295,9 @@ function updateCooldownsInSlot(slotId) {
             card.querySelectorAll('.cd-value').forEach((el, i) => {
                 const isPassive = el.dataset.isPassive === "true";
                 const appliedHaste = isPassive ? 0 : totalHaste;
-                el.innerText = calculateCDR(baseCooldowns[i], appliedHaste) + "초";
+                // 단일 값 뷰(static)인 경우 i=0이므로 첫번째 값 사용
+                const cdVal = baseCooldowns[i] !== undefined ? baseCooldowns[i] : baseCooldowns[0];
+                el.innerText = calculateCDR(cdVal, appliedHaste) + "초";
             });
         } else {
             const display = document.getElementById(`display-cd-${slotId}-${spellIdx}`);
@@ -345,6 +342,7 @@ function escapeHtml(text) {
 
 function addTooltipEvents() {
     const tooltip = document.getElementById('tooltip');
+    if (!tooltip) return;
     document.querySelectorAll('.skill-card').forEach(card => {
         card.addEventListener('mouseenter', e => {
             const name = card.dataset.name;
