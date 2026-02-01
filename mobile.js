@@ -449,6 +449,34 @@ function setupEventListeners() {
             });
         }
     });
+
+    // 6. 모바일 사이드바 (검색창) 열기/닫기
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+
+    if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+        });
+    }
+
+    if (closeBtn && sidebar) {
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+    }
+
+    // 챔피언 클릭 시 사이드바 닫기 (champion-grid 내부 클릭 감지)
+    const grid = document.getElementById('champion-grid');
+    if (grid) {
+        grid.addEventListener('click', (e) => {
+            // champ-item이나 그 내부 이미지를 클릭했을 때만 닫기
+            if (e.target.closest('.champ-item')) {
+                sidebar.classList.remove('open');
+            }
+        });
+    }
 }
 
 function setupControl(slotId, type) {
