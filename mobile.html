@@ -6,9 +6,8 @@
     <title>LoL 쿨타임 계산기</title>
     
     <script>
-        // PC 접속 시 리다이렉트
         if (window.innerWidth > 800 && window.location.search.indexOf('mode=mobile') === -1) {
-             window.location.href = 'index.html?mode=desktop';
+            window.location.href = 'index.html?mode=desktop';
         }
     </script>
 
@@ -16,25 +15,22 @@
 </head>
 <body>
 
-    <!-- 사이드바 (챔피언 검색) -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 style="color:white; margin:0;">챔피언 검색</h3>
             </div>
-            <input type="text" id="search-input" placeholder="챔피언 검색 (가렌, Garen)" autocomplete="off">
+            <input type="text" id="search-input" placeholder="챔피언 검색 (가렌, Garen)" 
+                   style="width:100%; padding:10px; background:#0b0c15; border:1px solid #3d4960; color:white; border-radius:6px; margin-bottom:10px;">
             <div id="filter-bar" class="filter-bar"></div>
         </div>
         <div id="champion-grid" class="champion-grid"></div>
-        <!-- 닫기 버튼 -->
         <button id="sidebar-close-btn" class="sidebar-close-btn">닫기</button>
     </div>
 
-    <!-- 메인 컨텐츠 -->
     <div class="container">
         <div class="main-content">
             
-            <!-- 상단 바 -->
             <div class="app-top-bar">
                 <div class="title-wrapper">
                     <h1 class="app-title">LoL 쿨타임 계산기</h1>
@@ -43,12 +39,10 @@
                 <a href="index.html?mode=desktop" class="header-pc-btn">PC 버전</a>
             </div>
 
-            <!-- 검색 버튼 (열기) -->
             <button id="mobile-menu-btn" class="mobile-menu-btn">
                 <span style="font-size:18px;">🔍</span> 챔피언 검색 / 목록 열기
             </button>
 
-            <!-- 설정 (한눈에 보기) -->
             <div class="settings-area">
                 <label class="toggle-label">
                     <span>한눈에 보기</span>
@@ -57,7 +51,6 @@
                 </label>
             </div>
 
-            <!-- 챔피언 슬롯 (ID: slot-1) -->
             <div id="slot-1" class="champion-slot active">
                 <div class="slot-header">
                     <div class="champ-portrait">
@@ -66,13 +59,11 @@
                     </div>
                     <div>
                         <h2 id="name-champ-1" style="color:#fff;">챔피언 선택</h2>
-                        <div id="title-champ-1" style="font-size:12px; color:#888;">버튼을 눌러 검색하세요</div>
+                        <div style="font-size:12px; color:#888;">터치하여 상세 정보 확인</div>
                     </div>
                 </div>
 
-                <!-- 컨트롤 (가속 조절) -->
                 <div class="slot-controls">
-                    <!-- 스킬 가속 -->
                     <div class="control-unit">
                         <div class="unit-header">
                             <span>스킬 가속</span>
@@ -95,10 +86,9 @@
                         </div>
                     </div>
 
-                    <!-- 궁극기 가속 -->
                     <div class="control-unit">
                         <div class="unit-header">
-                            <span>궁극기 가속 (R)</span>
+                            <span>궁극기 가속 (스킬가속에 추가 적용)</span>
                             <span class="cdr-text" id="disp-ult-cdr-1">R 0%</span>
                         </div>
                         <div class="unit-body">
@@ -117,74 +107,21 @@
                             </div>
                         </div>
                     </div>
-                    <button id="btn-reset-1" class="btn-reset-full">수치 초기화</button>
+                    <button id="btn-reset-1" class="btn-reset-full">초기화</button>
                 </div>
                 
                 <hr style="border:0; border-top:1px solid #2a2e3f; margin:20px 0;">
 
-                <!-- 스킬 목록이 들어갈 곳 (ID: skills-1) -->
-                <div id="skills-1" class="spells-container">
-                    <div style="text-align:center; color:#555; padding:30px 0;">
-                        스킬 정보가 여기에 표시됩니다.
+                <div id="spells-1" class="spells-container">
+                    <div style="text-align:center; color:#555; padding:20px;">
+                        상단 버튼을 눌러 챔피언을 선택하세요.
                     </div>
                 </div>
-            </div> <!-- slot-1 끝 -->
-
-            <!-- 슬롯 2 (JS 오류 방지용 숨김) -->
-            <div id="slot-2" class="champion-slot" style="display:none;">
-                <div class="slot-header">
-                    <div class="champ-portrait"><img id="img-champ-2" style="display:none;"><div id="holder-2"></div></div>
-                    <h2 id="name-champ-2"></h2>
-                    <div id="title-champ-2"></div>
-                </div>
-                <div class="slot-controls">
-                    <span id="disp-cdr-2"></span> <span id="disp-ult-cdr-2"></span>
-                    <input type="number" id="input-haste-2"><input type="number" id="input-ult-2">
-                    <button id="btn-reset-2"></button>
-                </div>
-                <div id="skills-2"></div>
             </div>
 
-        </div>
+            </div>
     </div>
 
-    <!-- 툴팁 -->
-    <div id="tooltip" class="tooltip hidden"></div>
-
-    <!-- ★ 사이드바 제어 스크립트 (mobile.js와 분리하여 독립 실행 보장) ★ -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const menuBtn = document.getElementById('mobile-menu-btn');
-            const closeBtn = document.getElementById('sidebar-close-btn');
-            const grid = document.getElementById('champion-grid');
-
-            // 열기
-            if (menuBtn) {
-                menuBtn.addEventListener('click', function() {
-                    sidebar.classList.add('active');
-                });
-            }
-
-            // 닫기 (버튼)
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
-                });
-            }
-
-            // 닫기 (챔피언 선택 시)
-            if (grid) {
-                grid.addEventListener('click', function(e) {
-                    if (e.target.closest('.champ-item')) {
-                        sidebar.classList.remove('active');
-                    }
-                });
-            }
-        });
-    </script>
-
-    <!-- 메인 로직 -->
     <script src="mobile.js"></script>
 </body>
 </html>

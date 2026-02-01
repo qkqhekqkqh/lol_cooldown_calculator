@@ -35,10 +35,10 @@ const COOLDOWN_OVERRIDES = {
     "Xerath": { 3: [130, 115, 100] }             
 };
 
-// 페이지 로드 시 즉시 이벤트 연결 및 초기화
+// DOM 로드 시 실행 (안전장치)
 window.addEventListener('DOMContentLoaded', () => {
-    setupEventListeners(); // 버튼 이벤트 먼저 연결 (데이터 로딩 전에도 작동하도록)
-    init(); // 데이터 로딩 시작
+    setupEventListeners(); 
+    init(); 
 });
 
 async function init() {
@@ -86,7 +86,7 @@ function createFilterButtons() {
     if(!bar) return;
     bar.innerHTML = "";
     FILTER_KEYS.forEach(key => {
-        const btn = document.createElement('button'); // div -> button 변경
+        const btn = document.createElement('button');
         btn.className = `filter-btn ${key === '전체' ? 'active all-btn' : ''}`;
         btn.innerText = key;
         btn.dataset.key = key;
@@ -151,6 +151,16 @@ function selectChampion(champId) {
     loadChampionDetail(activeSlot);
 }
 
+function cleanDesc(text) {
+    if (!text) return "";
+    return text
+        .replace(/<br\s*\/?>/gi, '\n')       
+        .replace(/<[^>]+>/g, '')             
+        .replace(/{{[^}]+}}/g, '[?]')        
+        .replace(/@[^@]+@/g, '[?]')          
+        .replace(/\s+/g, ' ').trim();        
+}
+
 function loadChampionDetail(slotId) {
     const slot = slots[slotId];
     if (!slot.data) return;
@@ -176,7 +186,8 @@ function loadChampionDetail(slotId) {
     if (nameEl) nameEl.innerText = data.name;
     if (titleEl) titleEl.innerText = data.title;
 
-    const skillsContainer = document.getElementById(`skills-${slotId}`);
+    // [수정] 스킬 컨테이너 ID를 spells-{slotId}로 변경
+    const skillsContainer = document.getElementById(`spells-${slotId}`);
     if (skillsContainer) {
         skillsContainer.innerHTML = "";
         skillsContainer.innerHTML += createSkillHTML(data.passive, "P", false, -1, slotId);
@@ -238,7 +249,7 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
             }
         } else {
             let buttons = isStatic 
-                ? '<span style="color:#666; font-size:12px;">전 구간 동일</span>'
+                ? '<span style="color:#666; font-size:13px;">전 구간 동일</span>'
                 : data.cooldown.map((_, i) => 
                     `<button class="lvl-btn ${i===0?'active':''}" onclick="changeLevel(this, ${slotId}, ${index}, ${i})">${i+1}</button>`
                   ).join('');
@@ -254,7 +265,7 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
             </div>`;
         }
     } else {
-        cooldownUI = '<div style="color:#555; font-size:12px; margin-top:8px;">쿨타임 없음</div>';
+        cooldownUI = '<div style="color:#555; font-size:12px; margin-top:5px;">쿨타임 없음</div>';
     }
 
     let tags = [];
@@ -263,21 +274,40 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
     if (isStatic && data.cooldown) tags.push('<span class="tag static">전 구간 동일</span>');
+    
+    const desc = cleanDesc(textDesc);
 
     return `
-        <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
-            <div class="skill-img-wrapper">
-                <img src="${imgUrl}" class="skill-img">
-                <div class="skill-key-badge">${key}</div>
-            </div>
-            <div class="skill-info">
-                <div class="skill-header">
-                    <span class="skill-name">${data.name}</span>
-                    <div class="tags">${tags.join('')}</div>
+        <div class="skill-card mobile-card" onclick="toggleDesc(this)">
+            <div class="skill-main-view">
+                <div class="skill-icon-area" style="position:relative; width:40px; height:40px; flex-shrink:0;">
+                    <img src="${imgUrl}" class="skill-img" style="width:100%; height:100%; border-radius:6px; border:1px solid #444;">
+                    <div class="skill-key-badge" style="position:absolute; bottom:-6px; right:-6px; background:#000; color:#c89b3c; border:1px solid #c89b3c; width:16px; height:16px; font-size:9px; font-weight:bold; display:flex; align-items:center; justify-content:center; border-radius:50%; z-index:10;">${key}</div>
                 </div>
-                ${cooldownUI}
+                <div class="skill-info-area">
+                    <div class="skill-header">
+                        <span class="skill-name">${data.name}</span>
+                        <div class="tags">${tags.join('')}</div>
+                    </div>
+                    ${cooldownUI}
+                </div>
             </div>
+            <div class="skill-desc-drawer" style="display:none;">
+                <hr style="border:0; border-top:1px solid #333; margin:8px 0;">
+                <p style="font-size:13px; color:#aaa; line-height:1.4;">${desc}</p>
+            </div>
+            ${data.cooldown ? `<div style="display:none;" id="base-cd-${slotId}-${index}">${JSON.stringify(data.cooldown)}</div>` : ''}
         </div>`;
+}
+
+window.toggleDesc = function(element) {
+    if (event.target.tagName === 'BUTTON' || event.target.classList.contains('lvl-btn')) return;
+    const drawer = element.querySelector('.skill-desc-drawer');
+    if (drawer) {
+        const isHidden = drawer.style.display === 'none';
+        drawer.style.display = isHidden ? 'block' : 'none';
+        element.style.backgroundColor = isHidden ? '#2a2e3f' : '#222635';
+    }
 }
 
 function updateCooldownsInSlot(slotId) {
@@ -298,7 +328,8 @@ function updateCooldownsInSlot(slotId) {
 
     if (!slot.data) return;
 
-    const skillsDiv = document.getElementById(`skills-${slotId}`);
+    // [수정] 스킬 컨테이너 ID를 spells-{slotId}로 변경
+    const skillsDiv = document.getElementById(`spells-${slotId}`);
     if(skillsDiv) {
         skillsDiv.querySelectorAll('.cd-value').forEach((el) => {
             const baseCd = parseFloat(el.dataset.baseCd);
@@ -313,6 +344,31 @@ function updateCooldownsInSlot(slotId) {
 
             el.innerText = calculateCDR(baseCd, totalHaste) + "초";
         });
+        
+        if (!isAllLevelView) {
+            skillsDiv.querySelectorAll('.main-cooldown').forEach((display) => {
+                const parts = display.id.split('-');
+                const index = parts[3];
+                const baseDataEl = document.getElementById(`base-cd-${slotId}-${index}`);
+                
+                if (baseDataEl) {
+                    const baseCooldowns = JSON.parse(baseDataEl.innerText);
+                    const wrapper = display.closest('.cd-row');
+                    const selector = wrapper ? wrapper.querySelector('.level-selector') : null;
+                    const lvl = selector ? parseInt(selector.dataset.currentLevel || 0) : 0;
+                    const safeIdx = Math.min(lvl, baseCooldowns.length - 1);
+                    
+                    const card = display.closest('.skill-card');
+                    const badge = card.querySelector('.skill-key-badge');
+                    const key = badge ? badge.innerText : "";
+
+                    let totalHaste = (key === "R") ? (slot.haste + slot.ultHaste) : slot.haste;
+                    if (display.dataset.isPassive === "true") totalHaste = 0;
+                    
+                    display.innerText = calculateCDR(baseCooldowns[safeIdx], totalHaste) + "초";
+                }
+            });
+        }
     }
 }
 
@@ -330,15 +386,6 @@ function calculateCDR(baseCd, haste) {
     return parseFloat(cooldown.toFixed(2));
 }
 
-function escapeHtml(text) {
-    if (!text) return "";
-    return text.replace(/"/g, "&quot;").replace(/<[^>]*>?/gm, '');
-}
-
-function addTooltipEvents() {
-    // 모바일에서는 별도 툴팁 없음
-}
-
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
@@ -354,12 +401,13 @@ function setupEventListeners() {
     }
 
     const menuBtn = document.getElementById('mobile-menu-btn');
-    if (menuBtn) {
+    const closeBtn = document.getElementById('sidebar-close-btn');
+    const sidebar = document.getElementById('sidebar');
+
+    if (menuBtn && sidebar) {
         menuBtn.addEventListener('click', openSidebar);
     }
-    
-    const closeBtn = document.getElementById('sidebar-close-btn');
-    if (closeBtn) {
+    if (closeBtn && sidebar) {
         closeBtn.addEventListener('click', closeSidebar);
     }
 
@@ -371,7 +419,7 @@ function setupEventListeners() {
         });
     }
 
-    [1].forEach(id => {
+    [1, 2].forEach(id => {
         setupControl(id, 'haste');
         setupControl(id, 'ult');
         const resetBtn = document.getElementById(`btn-reset-${id}`);
@@ -408,3 +456,5 @@ function setupControl(slotId, type) {
         });
     }
 }
+
+init();
