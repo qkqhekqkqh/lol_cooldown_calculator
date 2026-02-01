@@ -259,6 +259,7 @@ input[type=number] { -moz-appearance: textfield; }
 .tag.toggle { background: rgba(83, 82, 237, 0.2); color: #5352ed; border-color: #5352ed; }
 .tag.passive { background: #444; color: #aaa; border-color: #666; }
 .tag.ammo { background: rgba(255, 159, 67, 0.1); color: var(--ammo-color); border-color: var(--ammo-color); }
+.tag.static { background: #374151; color: #f3f4f6; border: 1px solid #4b5563; }
 
 .hidden { display: none !important; }
 .tooltip { position: fixed; background: rgba(0, 0, 0, 0.95); border: 1px solid var(--border); padding: 16px; border-radius: 6px; width: 340px; color: #ddd; font-size: 14px; pointer-events: none; z-index: 1000; line-height: 1.5; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
