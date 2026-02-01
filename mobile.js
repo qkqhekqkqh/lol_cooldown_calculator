@@ -13,7 +13,6 @@ let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// 예외 처리 데이터 (충전형 스킬 등)
 const COOLDOWN_OVERRIDES = {
     "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
     "Teemo": { 3: [30, 25, 20] },             
@@ -167,9 +166,7 @@ function loadChampionDetail(slotId) {
         skillsContainer.innerHTML += createSkillHTML(spell, key, true, idx, slotId);
     });
 
-    // 모바일에서는 툴팁 이벤트를 제거하거나 클릭으로 대체할 수 있으나, 
-    // 여기서는 기본 로직을 유지합니다.
-    addTooltipEvents(); 
+    addTooltipEvents();
     updateCooldownsInSlot(slotId);
 }
 
@@ -184,23 +181,23 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
 
-    if (data.cooldown) {
-        // 전 구간 쿨타임 동일 여부 체크
-        const isStatic = data.cooldown.every(v => v === data.cooldown[0]);
+    // 고정 쿨타임 여부 확인
+    const isStatic = data.cooldown && data.cooldown.every(v => v === data.cooldown[0]);
 
+    if (data.cooldown) {
         let timeLabel = '쿨타임';
         if (isAmmo) timeLabel = '1회 충전 시간';
-        if (isPassive) timeLabel = '재사용 대기시간 (고정)';
+        if (isPassive) timeLabel = '재사용 대기시간';
 
         let textClass = "";
         if (isAmmo) textClass = "ammo-text";
         if (isPassive) textClass = "passive-text";
 
         if (isAllLevelView) {
-            // [모바일] 쿨타임 전 구간 동일 시 처리
+            // 쿨타임 전 구간 동일 시
             if (isStatic) {
-                // 라벨은 기본색, 숫자는 하늘색(#0ac8f6)
-                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel} (전 구간 동일)</div>`;
+                // 라벨 텍스트 정리, 숫자 하늘색
+                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 cooldownUI = `
                     ${tableTitle}
                     <div class="cd-value ${textClass}" 
@@ -210,7 +207,6 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
                          data-is-passive="${isPassive}">--</div>
                 `;
             } else {
-                // 기존 표 방식
                 let headers = data.cooldown.map((_, i) => `<th>Lv${i+1}</th>`).join('');
                 let rows = data.cooldown.map(cd => 
                     `<td class="cd-value ${textClass}" data-base-cd="${cd}" data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</td>`
@@ -248,6 +244,11 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
+    
+    // ★ [추가] 고정 쿨타임 뱃지 추가
+    if (data.cooldown && isStatic) {
+        tags.push('<span class="tag static">전 구간 동일</span>');
+    }
 
     return `
         <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
@@ -291,11 +292,9 @@ function updateCooldownsInSlot(slotId) {
 
         if (isAllLevelView) {
             const card = baseEl.closest('.skill-card');
-            // 표(td)와 단일 숫자(div) 모두 .cd-value 클래스를 가지므로 동일하게 처리가능
             card.querySelectorAll('.cd-value').forEach((el, i) => {
                 const isPassive = el.dataset.isPassive === "true";
                 const appliedHaste = isPassive ? 0 : totalHaste;
-                // 단일 숫자일 경우 i=0이므로 baseCooldowns[0]을 참조하게 됨
                 el.innerText = calculateCDR(baseCooldowns[i], appliedHaste) + "초";
             });
         } else {
@@ -341,7 +340,7 @@ function escapeHtml(text) {
 
 function addTooltipEvents() {
     const tooltip = document.getElementById('tooltip');
-    if(!tooltip) return; // 모바일 뷰에 툴팁 div가 없을 경우 대비
+    if(!tooltip) return; 
     
     document.querySelectorAll('.skill-card').forEach(card => {
         card.addEventListener('mouseenter', e => {
@@ -380,19 +379,14 @@ function setupEventListeners() {
         });
     });
 
-    // [모바일] 모드 토글 이벤트 처리
     document.getElementById('mode-toggle').addEventListener('change', (e) => {
         const container = document.querySelector('.detail-container');
         const labels = document.querySelectorAll('.mode-switch-wrapper .mode-label');
         if (e.target.checked) {
-            // [듀얼 모드]
             container.classList.remove('single-mode');
             labels[0].classList.remove('active-text'); labels[1].classList.add('active-text');    
-            
-            // ★ [수정] 모바일에서도 flex로 설정하여 스크롤 문제 해결
             document.getElementById('slot-2').style.display = 'flex'; 
         } else {
-            // [싱글 모드]
             container.classList.add('single-mode');
             labels[0].classList.add('active-text'); labels[1].classList.remove('active-text');
             document.getElementById('slot-2').style.display = 'none';

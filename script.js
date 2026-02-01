@@ -13,7 +13,7 @@ let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// API 데이터가 0초로 나오거나 충전 시간을 표시해야 하는 스킬들 예외 처리
+// API 데이터 예외 처리
 const COOLDOWN_OVERRIDES = {
     "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
     "Teemo": { 3: [30, 25, 20] },             
@@ -182,12 +182,13 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
     const isPassive = (key === "P");
 
-    if (data.cooldown) {
-        const isStatic = data.cooldown.every(v => v === data.cooldown[0]);
+    // 고정 쿨타임 여부 확인
+    const isStatic = data.cooldown && data.cooldown.every(v => v === data.cooldown[0]);
 
+    if (data.cooldown) {
         let timeLabel = '쿨타임';
         if (isAmmo) timeLabel = '1회 충전 시간';
-        if (isPassive) timeLabel = '재사용 대기시간 (고정)';
+        if (isPassive) timeLabel = '재사용 대기시간';
 
         let textClass = "";
         if (isAmmo) textClass = "ammo-text";
@@ -196,10 +197,10 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isAllLevelView) {
             // 쿨타임 전 구간 동일 시
             if (isStatic) {
-                // [원복] 라벨 색상 원래대로 (color: #666;)
-                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel} (전 구간 동일)</div>`;
+                // 라벨에는 "전 구간 동일" 텍스트 제거 (뱃지로 이동)
+                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 
-                // ★ [수정] 쿨타임 숫자 색상 적용 (color: #0ac8f6;)
+                // 숫자는 하늘색(#0ac8f6)
                 cooldownUI = `
                     ${tableTitle}
                     <div class="cd-value ${textClass}" 
@@ -241,11 +242,18 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         cooldownUI = '<div style="color:#555; font-size:13px; margin-top:8px;">쿨타임 없음</div>';
     }
 
+    // 태그(뱃지) 생성 로직
     let tags = [];
     const text = (data.description || "") + (data.tooltip || "");
+    
     if (text.includes('토글') || text.includes('toggle')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
+    
+    // ★ [추가] 쿨타임이 존재하고, 전 구간 동일하다면 뱃지 추가
+    if (data.cooldown && isStatic) {
+        tags.push('<span class="tag static">전 구간 동일</span>');
+    }
 
     return `
         <div class="skill-card" data-desc="${escapeHtml(data.description)}" data-name="${data.name}">
