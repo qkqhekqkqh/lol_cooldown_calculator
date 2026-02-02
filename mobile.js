@@ -13,7 +13,10 @@ let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// 예외 처리 데이터
+// ★ [설정] 충전형으로 잘못 표시되는 챔피언 예외 처리
+const AMMO_EXCLUSIONS = ["Leblanc", "Xerath", "Akali"];
+
+// ★ [설정] 쿨타임 데이터 보정 (충전 시간 등)
 const COOLDOWN_OVERRIDES = {
     "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
     "Teemo": { 3: [30, 25, 20] },             
@@ -32,7 +35,8 @@ const COOLDOWN_OVERRIDES = {
     "Jhin": { 2: [28, 25, 22, 19, 16] },         
     "Rumble": { 2: [6, 6, 6, 6, 6] },            
     "Zyra": { 1: [18, 16, 14, 12, 10] },         
-    "Xerath": { 3: [130, 115, 100] }             
+    "Xerath": { 3: [130, 115, 100] },
+    "Azir": { 1: [10, 9, 8, 7, 6] }
 };
 
 // DOM 로드 시 실행 (안전장치)
@@ -47,6 +51,7 @@ async function init() {
         const versions = await verRes.json();
         currentVersion = versions[0];
         
+        // 버전 표기 (Major + 10)
         const verEl = document.getElementById('header-version');
         if (verEl) {
             const parts = currentVersion.split('.');
@@ -71,14 +76,15 @@ async function init() {
     }
 }
 
+// 사이드바 제어 함수
 function openSidebar() {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.add('active');
+    if(sidebar) sidebar.classList.add('active');
 }
 
 function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.remove('active');
+    if(sidebar) sidebar.classList.remove('active');
 }
 
 function createFilterButtons() {
@@ -135,6 +141,13 @@ function renderChampionList() {
         const img = document.createElement('img');
         img.src = `https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champ.image.full}`;
         img.loading = "lazy";
+        // 스타일 강제 주입
+        img.style.width = "100%";
+        img.style.aspectRatio = "1/1";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "8px";
+        img.style.border = "1px solid #333";
+        img.style.display = "block";
         
         const name = document.createElement('span');
         name.innerText = champ.name;
@@ -158,6 +171,7 @@ function cleanDesc(text) {
         .replace(/<[^>]+>/g, '')             
         .replace(/{{[^}]+}}/g, '[?]')        
         .replace(/@[^@]+@/g, '[?]')          
+        .replace(/"/g, '&quot;') 
         .replace(/\s+/g, ' ').trim();        
 }
 
@@ -165,6 +179,7 @@ function loadChampionDetail(slotId) {
     const slot = slots[slotId];
     if (!slot.data) return;
     
+    // 데이터 복사 및 오버라이드 적용
     const data = JSON.parse(JSON.stringify(slot.data));
     if (COOLDOWN_OVERRIDES[data.id]) {
         const overrides = COOLDOWN_OVERRIDES[data.id];
@@ -176,6 +191,7 @@ function loadChampionDetail(slotId) {
     const holder = document.getElementById(`holder-${slotId}`);
     const img = document.getElementById(`img-champ-${slotId}`);
     const nameEl = document.getElementById(`name-champ-${slotId}`);
+    // 모바일 HTML에는 title 엘리먼트가 holder 쪽에 없거나 ID가 다를 수 있음
     const titleEl = document.getElementById(`title-champ-${slotId}`);
 
     if (holder) holder.style.display = 'none';
@@ -186,7 +202,7 @@ function loadChampionDetail(slotId) {
     if (nameEl) nameEl.innerText = data.name;
     if (titleEl) titleEl.innerText = data.title;
 
-    // [수정] 스킬 컨테이너 ID를 spells-{slotId}로 변경
+    // ★ [중요] 모바일 HTML은 id="spells-1"을 사용함
     const skillsContainer = document.getElementById(`spells-${slotId}`);
     if (skillsContainer) {
         skillsContainer.innerHTML = "";
@@ -196,6 +212,9 @@ function loadChampionDetail(slotId) {
             skillsContainer.innerHTML += createSkillHTML(spell, key, true, idx, slotId);
         });
     }
+    
+    // 툴팁 등 부가 기능 연결
+    addTooltipEvents();
     updateCooldownsInSlot(slotId);
 }
 
@@ -206,8 +225,14 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
 
     let cooldownUI = '';
     
+    const champId = slots[slotId].id;
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
-    const isAmmo = (!isNaN(ammoCount) && ammoCount > 1) || (index >= 0 && COOLDOWN_OVERRIDES[slots[slotId].id] && COOLDOWN_OVERRIDES[slots[slotId].id][index]);
+    
+    // ★ 예외 챔피언 제외 로직 적용
+    const isAmmo = ((!isNaN(ammoCount) && ammoCount > 1) || 
+                    (index >= 0 && COOLDOWN_OVERRIDES[champId] && COOLDOWN_OVERRIDES[champId][index])) &&
+                    !AMMO_EXCLUSIONS.includes(champId);
+    
     const isPassive = (key === "P");
 
     let isStatic = false;
@@ -225,31 +250,38 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isPassive) textClass = "passive-text";
 
         if (isAllLevelView) {
+            // 한눈에 보기
             if (isStatic) {
+                // 전 구간 동일 (큰 숫자)
                 const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 cooldownUI = `
                     ${tableTitle}
                     <div class="cd-value ${textClass}" 
-                         style="font-size:20px; font-weight:bold; color:#0ac8f6;" 
+                         style="font-size:22px; font-weight:bold; color:#0ac8f6;" 
                          data-base-cd="${data.cooldown[0]}" 
                          data-is-ammo="${isAmmo}" 
                          data-is-passive="${isPassive}">--</div>
                 `;
             } else {
+                // 레벨별 다름 (표)
                 let headers = data.cooldown.map((_, i) => `<th>Lv${i+1}</th>`).join('');
                 let rows = data.cooldown.map(cd => 
                     `<td class="cd-value ${textClass}" data-base-cd="${cd}" data-is-ammo="${isAmmo}" data-is-passive="${isPassive}">--</td>`
                 ).join('');
+                
+                const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
+
                 cooldownUI = `
-                    <div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>
+                    ${tableTitle}
                     <table class="all-levels-table">
                         <thead><tr>${headers}</tr></thead>
                         <tbody><tr>${rows}</tr></tbody>
                     </table>`;
             }
         } else {
+            // 버튼 보기
             let buttons = isStatic 
-                ? '<span style="color:#666; font-size:13px;">전 구간 동일</span>'
+                ? '<span style="color:#666; font-size:12px;">전 구간 동일</span>'
                 : data.cooldown.map((_, i) => 
                     `<button class="lvl-btn ${i===0?'active':''}" onclick="changeLevel(this, ${slotId}, ${index}, ${i})">${i+1}</button>`
                   ).join('');
@@ -328,7 +360,7 @@ function updateCooldownsInSlot(slotId) {
 
     if (!slot.data) return;
 
-    // [수정] 스킬 컨테이너 ID를 spells-{slotId}로 변경
+    // ★ [수정] ID 통일: skills -> spells
     const skillsDiv = document.getElementById(`spells-${slotId}`);
     if(skillsDiv) {
         skillsDiv.querySelectorAll('.cd-value').forEach((el) => {
@@ -384,6 +416,15 @@ function calculateCDR(baseCd, haste) {
     if (baseCd === 0) return 0;
     const cooldown = baseCd * (100 / (100 + haste));
     return parseFloat(cooldown.toFixed(2));
+}
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return text.replace(/"/g, "&quot;").replace(/<[^>]*>?/gm, '');
+}
+
+function addTooltipEvents() {
+    // 모바일은 툴팁 대신 클릭(터치) 시 설명 펼침 기능 사용
 }
 
 function setupEventListeners() {
@@ -456,5 +497,3 @@ function setupControl(slotId, type) {
         });
     }
 }
-
-init();

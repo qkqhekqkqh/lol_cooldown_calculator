@@ -14,15 +14,16 @@ let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-// ★ [추가] 충전형으로 잘못 표시되는 챔피언 예외 처리
-const AMMO_EXCLUSIONS = ["Leblanc"];
+// ★ [수정] 충전형으로 잘못 표시되는 챔피언 예외 처리 (제라스, 아칼리 추가)
+const AMMO_EXCLUSIONS = ["Leblanc", "Xerath", "Akali"];
 
-// 쿨타임 보정 데이터
+// 쿨타임 보정 데이터 (충전형 스킬 등)
 const COOLDOWN_OVERRIDES = {
     "Gangplank": { 2: [18, 17, 16, 15, 14] }, 
     "Teemo": { 3: [30, 25, 20] },             
     "Corki": { 3: [12, 11, 10] },             
-    "Akali": { 3: [100, 80, 60] },            
+    "Akali": { 3: [100, 80, 60] },
+    "Azir": { 1: [10, 9, 8, 7, 6] },          
     "Heimerdinger": { 0: [20, 20, 20, 20, 20] }, 
     "Caitlyn": { 1: [30, 25.5, 21, 16.5, 12] },  
     "Vi": { 2: [14, 12.5, 11, 9.5, 8] },         
@@ -152,7 +153,6 @@ function selectChampion(champId) {
     loadChampionDetail(activeSlot);
 }
 
-// ★ [수정] 텍스트 정리 및 따옴표 이스케이프 (HTML 속성 깨짐 방지)
 function cleanDesc(text) {
     if (!text) return "";
     return text
@@ -160,7 +160,7 @@ function cleanDesc(text) {
         .replace(/<[^>]+>/g, '')             
         .replace(/{{[^}]+}}/g, '[?]')        
         .replace(/@[^@]+@/g, '[?]')          
-        .replace(/"/g, '&quot;') // 큰따옴표 이스케이프 추가
+        .replace(/"/g, '&quot;') 
         .replace(/\s+/g, ' ').trim();        
 }
 
@@ -179,6 +179,7 @@ function loadChampionDetail(slotId) {
     const holder = document.getElementById(`holder-${slotId}`);
     const img = document.getElementById(`img-champ-${slotId}`);
     const nameEl = document.getElementById(`name-champ-${slotId}`);
+    
     const titleEl = document.querySelector(`#slot-${slotId} .slot-header p`); 
 
     if (holder) holder.style.display = 'none';
@@ -218,9 +219,10 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     const champId = slots[slotId].id;
     const ammoCount = data.maxammo ? parseInt(data.maxammo) : 0;
     
-    // 르블랑 등 예외 챔피언 제외
-    const isAmmo = (!isNaN(ammoCount) && ammoCount > 1 && !AMMO_EXCLUSIONS.includes(champId)) || 
-                   (index >= 0 && COOLDOWN_OVERRIDES[champId] && COOLDOWN_OVERRIDES[champId][index]);
+    // ★ [수정] 르블랑, 제라스 등 예외 챔피언은 충전형에서 제외 (전체 괄호 적용으로 AMMO_EXCLUSIONS가 최우선 적용됨)
+    const isAmmo = ((!isNaN(ammoCount) && ammoCount > 1) || 
+                   (index >= 0 && COOLDOWN_OVERRIDES[champId] && COOLDOWN_OVERRIDES[champId][index])) &&
+                   !AMMO_EXCLUSIONS.includes(champId);
     
     const isPassive = (key === "P");
 
@@ -239,7 +241,6 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isPassive) textClass = "passive-text";
 
         if (isAllLevelView) {
-            // 전 구간 동일 시 단일 숫자 표시 (색상 하늘색 #0ac8f6)
             if (isStatic) {
                 const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
                 cooldownUI = `
@@ -293,12 +294,10 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
     if (isStatic && data.cooldown) tags.push('<span class="tag static">전 구간 동일</span>');
     
-    // ★ 안전하게 이스케이프된 설명 데이터 생성
     const cleanD = cleanDesc(textDesc);
-    const safeName = data.name.replace(/"/g, '&quot;');
 
     return `
-        <div class="skill-card" data-name="${safeName}" data-desc="${cleanD}">
+        <div class="skill-card" data-name="${data.name}" data-desc="${cleanD}">
             <div class="skill-img-wrapper">
                 <img src="${imgUrl}" class="skill-img">
                 <div class="skill-key-badge">${key}</div>
@@ -361,20 +360,14 @@ function updateCooldownsInSlot(slotId) {
                     const lvl = selector ? parseInt(selector.dataset.currentLevel || 0) : 0;
                     const safeIdx = Math.min(lvl, baseCooldowns.length - 1);
                     
-                    const isAmmo = display.dataset.isAmmo === "true";
-                    const isPassive = display.dataset.isPassive === "true";
-                    
-                    const badge = display.closest('.skill-card').querySelector('.skill-key-badge');
+                    const card = display.closest('.skill-card');
+                    const badge = card.querySelector('.skill-key-badge');
                     const key = badge ? badge.innerText : "";
 
                     let totalHaste = (key === "R") ? (slot.haste + slot.ultHaste) : slot.haste;
-                    if (isPassive) totalHaste = 0;
-
-                    let suffix = "초";
-                    if (isAmmo) suffix = "초 (충전)";
-                    if (isPassive) suffix = "초 (고정)";
-
-                    display.innerText = calculateCDR(baseCooldowns[safeIdx], totalHaste) + suffix;
+                    if (display.dataset.isPassive === "true") totalHaste = 0;
+                    
+                    display.innerText = calculateCDR(baseCooldowns[safeIdx], totalHaste) + "초";
                 }
             });
         }
