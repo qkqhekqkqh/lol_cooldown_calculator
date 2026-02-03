@@ -23,7 +23,7 @@
         <div class="sidebar-header">
             <div class="header-top">
                 <h2>챔피언 선택</h2>
-                <span id="version-display" class="version-badge">Ver Loading...</span>
+                <span id="version-display" class="version-badge">Loading...</span>
             </div>
             <input type="text" id="search-input" placeholder="챔피언 검색...">
         </div>
@@ -34,6 +34,7 @@
     </div>
 
     <div class="main-content">
+        <!-- 상단바: 설정 및 모바일 전환 버튼 -->
         <div class="top-settings-bar">
             
             <div class="mode-switch-wrapper">
@@ -45,21 +46,16 @@
                 <span class="mode-label">비교</span>
             </div>
 
-            <div class="view-toggle-wrapper">
-                <span class="mode-label">스킬 레벨로 보기</span>
-                <label class="switch">
-                    <input type="checkbox" id="view-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="mode-label active-text">한눈에 보기</span>
-            </div>
+            <!-- ★ [삭제됨] 뷰 토글 버튼 제거 -->
 
+            <!-- 모바일 이동 버튼 -->
             <a href="mobile.html?mode=mobile" class="view-switch-btn">📱 모바일 버전</a>
 
         </div>
 
         <div class="detail-container single-mode">
             
+            <!-- SLOT 1 -->
             <div class="champion-slot active" id="slot-1">
                 <div class="slot-controls">
                     <div class="control-unit">
@@ -120,6 +116,7 @@
                 </div>
             </div>
 
+            <!-- SLOT 2 -->
             <div class="champion-slot" id="slot-2" style="display: none;">
                 <div class="slot-controls">
                     <div class="control-unit">
@@ -129,6 +126,8 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
                                 <button data-val="-10">-10</button>
                                 <button data-val="-5">-5</button>
                             </div>
@@ -136,6 +135,8 @@
                             <div class="btn-group plus">
                                 <button data-val="5">+5</button>
                                 <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
@@ -147,6 +148,8 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
+                                <button data-val="-20">-20</button>
+                                <button data-val="-15">-15</button>
                                 <button data-val="-10">-10</button>
                                 <button data-val="-5">-5</button>
                             </div>
@@ -154,6 +157,8 @@
                             <div class="btn-group plus">
                                 <button data-val="5">+5</button>
                                 <button data-val="10">+10</button>
+                                <button data-val="15">+15</button>
+                                <button data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
