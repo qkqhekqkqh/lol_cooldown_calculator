@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LoL 쿨타임 계산기</title>
-    
+
     <script>
         // PC 접속 시 리다이렉트
         if (window.innerWidth > 800 && window.location.search.indexOf('mode=mobile') === -1) {
@@ -15,49 +15,71 @@
     <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
-
     <!-- 사이드바 (챔피언 검색) -->
-    <div id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="color:white; margin:0;">챔피언 검색</h3>
+    <aside id="sidebar" class="sidebar" aria-hidden="true">
+        <div class="sidebar-inner">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">챔피언 선택</h2>
+                <p class="sidebar-subtitle">검색하거나 초성 필터로 빠르게 찾으세요.</p>
+
+                <label for="search-input" class="field-label">챔피언 검색</label>
+                <div class="search-input-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                    </svg>
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="예: 가렌 / Garen"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                </div>
+
+                <div id="filter-bar" class="filter-bar" aria-label="초성 필터"></div>
             </div>
-            <input type="text" id="search-input" placeholder="챔피언 검색 (가렌, Garen)" 
-                   style="width:100%; padding:10px; background:#0b0c15; border:1px solid #3d4960; color:white; border-radius:6px; margin-bottom:10px;">
-            <div id="filter-bar" class="filter-bar"></div>
+
+            <div id="champion-grid" class="champion-grid" aria-live="polite"></div>
+
+            <button id="sidebar-close-btn" class="sidebar-close-btn" type="button">목록 닫기</button>
         </div>
-        <div id="champion-grid" class="champion-grid"></div>
-        <button id="sidebar-close-btn" class="sidebar-close-btn">닫기</button>
-    </div>
+    </aside>
 
     <!-- 메인 컨텐츠 -->
-    <div class="container">
+    <main class="container">
         <div class="main-content">
-            
             <!-- 상단 바 -->
-            <div class="app-top-bar">
+            <header class="app-top-bar">
                 <div class="title-wrapper">
+                    <p class="title-eyebrow">LEAGUE UTILITY</p>
                     <h1 class="app-title">LoL 쿨타임 계산기</h1>
                     <span id="header-version" class="version-tag">Patch ...</span>
                 </div>
                 <a href="index.html?mode=desktop" class="header-pc-btn">PC 버전</a>
-            </div>
+            </header>
 
             <!-- 검색 버튼 -->
-            <button id="mobile-menu-btn" class="mobile-menu-btn">
-                <span style="font-size:18px;">🔍</span> 챔피언 검색 / 목록 열기
+            <button id="mobile-menu-btn" class="mobile-menu-btn" type="button" aria-controls="sidebar">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 6H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M4 12H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M4 18H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                <span>챔피언 검색 / 목록 열기</span>
             </button>
 
             <!-- 챔피언 슬롯 (ID: slot-1) -->
-            <div id="slot-1" class="champion-slot active">
+            <section id="slot-1" class="champion-slot active" aria-live="polite">
                 <div class="slot-header">
                     <div class="champ-portrait">
-                        <div id="holder-1" class="placeholder-circle">?</div>
-                        <img id="img-champ-1" style="display:none;" src="" alt="">
+                        <div id="holder-1" class="placeholder-circle" aria-hidden="true">?</div>
+                        <img id="img-champ-1" style="display:none;" src="" alt="챔피언 초상화">
                     </div>
-                    <div>
-                        <h2 id="name-champ-1" style="color:#fff;">챔피언 선택</h2>
-                        <div id="title-champ-1" style="font-size:12px; color:#888;">버튼을 눌러 검색하세요</div>
+                    <div class="slot-meta">
+                        <p class="slot-label">현재 선택 챔피언</p>
+                        <h2 id="name-champ-1">챔피언 선택</h2>
+                        <p id="title-champ-1" class="slot-subtitle">버튼을 눌러 검색하세요</p>
                     </div>
                 </div>
 
@@ -70,18 +92,18 @@
                             <span class="cdr-text" id="disp-cdr-1">0%</span>
                         </div>
                         <div class="unit-body">
-                            <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                            <div class="btn-group minus" role="group" aria-label="스킬 가속 감소">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-haste-1" value="0">
-                            <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                            <input type="number" id="input-haste-1" value="0" inputmode="numeric" aria-label="스킬 가속 수치">
+                            <div class="btn-group plus" role="group" aria-label="스킬 가속 증가">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
@@ -93,51 +115,56 @@
                             <span class="cdr-text" id="disp-ult-cdr-1">R 0%</span>
                         </div>
                         <div class="unit-body">
-                            <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                            <div class="btn-group minus" role="group" aria-label="궁극기 가속 감소">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-ult-1" value="0">
-                            <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                            <input type="number" id="input-ult-1" value="0" inputmode="numeric" aria-label="궁극기 가속 수치">
+                            <div class="btn-group plus" role="group" aria-label="궁극기 가속 증가">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
-                    <button id="btn-reset-1" class="btn-reset-full">수치 초기화</button>
+
+                    <button id="btn-reset-1" class="btn-reset-full" type="button">수치 초기화</button>
                 </div>
-                
-                <hr style="border:0; border-top:1px solid #2a2e3f; margin:20px 0;">
+
+                <div class="section-divider" aria-hidden="true"></div>
 
                 <!-- 스킬 목록이 들어갈 곳 (ID: skills-1) -->
                 <div id="skills-1" class="spells-container">
-                    <div style="text-align:center; color:#555; padding:30px 0;">
-                        스킬 정보가 여기에 표시됩니다.
-                    </div>
+                    <div class="empty-state">스킬 정보를 보려면 챔피언을 선택하세요.</div>
                 </div>
-            </div> <!-- slot-1 끝 -->
+            </section>
 
             <!-- 슬롯 2 (JS 에러 방지용 숨김) -->
-            <div id="slot-2" class="champion-slot" style="display:none;">
+            <section id="slot-2" class="champion-slot champion-slot-ghost" hidden aria-hidden="true">
                 <div class="slot-header">
-                    <div class="champ-portrait"><img id="img-champ-2" style="display:none;"><div id="holder-2"></div></div>
-                    <h2 id="name-champ-2"></h2>
-                    <div id="title-champ-2"></div>
+                    <div class="champ-portrait">
+                        <img id="img-champ-2" style="display:none;" src="" alt="">
+                        <div id="holder-2"></div>
+                    </div>
+                    <div>
+                        <h2 id="name-champ-2"></h2>
+                        <div id="title-champ-2"></div>
+                    </div>
                 </div>
                 <div class="slot-controls">
-                    <span id="disp-cdr-2"></span> <span id="disp-ult-cdr-2"></span>
-                    <input type="number" id="input-haste-2"><input type="number" id="input-ult-2">
-                    <button id="btn-reset-2"></button>
+                    <span id="disp-cdr-2"></span>
+                    <span id="disp-ult-cdr-2"></span>
+                    <input type="number" id="input-haste-2" value="0" inputmode="numeric">
+                    <input type="number" id="input-ult-2" value="0" inputmode="numeric">
+                    <button id="btn-reset-2" type="button"></button>
                 </div>
                 <div id="skills-2"></div>
-            </div>
-
+            </section>
         </div>
-    </div>
+    </main>
 
     <!-- 툴팁 -->
     <div id="tooltip" class="tooltip hidden"></div>

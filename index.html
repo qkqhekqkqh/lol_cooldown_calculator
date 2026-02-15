@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LoL 쿨타임 계산기 (PC)</title>
     <script>
         // URL에 '?mode=desktop'이 있으면 모바일이라도 리다이렉트 안 함
@@ -10,53 +11,60 @@
             var userAgent = navigator.userAgent;
             var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
             if (isMobile) {
-                window.location.href = "mobile.html"; 
+                window.location.href = 'mobile.html';
             }
         }
     </script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="container">
-    <div class="sidebar">
+    <aside class="sidebar" aria-label="챔피언 목록">
         <div class="sidebar-header">
             <div class="header-top">
-                <h2>챔피언 선택</h2>
+                <div>
+                    <p class="panel-eyebrow">LEAGUE UTILITY</p>
+                    <h2>챔피언 선택</h2>
+                </div>
                 <span id="version-display" class="version-badge">Loading...</span>
             </div>
-            <input type="text" id="search-input" placeholder="챔피언 검색...">
+
+            <label class="search-label" for="search-input">챔피언 검색</label>
+            <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+                <input type="text" id="search-input" placeholder="챔피언 검색...">
+            </div>
         </div>
-        
+
         <div class="filter-bar" id="filter-bar"></div>
-
         <div class="champion-grid" id="champion-grid"></div>
-    </div>
+    </aside>
 
-    <div class="main-content">
-        <!-- 상단바: 설정 및 모바일 전환 버튼 -->
+    <main class="main-content">
         <div class="top-settings-bar">
-            
             <div class="mode-switch-wrapper">
-                <span class="mode-label active-text">단일</span>
-                <label class="switch">
-                    <input type="checkbox" id="mode-toggle">
-                    <span class="slider"></span>
-                </label>
-                <span class="mode-label">비교</span>
+                <span class="mode-title">카드 수</span>
+                <div class="mode-selector" role="tablist" aria-label="챔피언 카드 수">
+                    <button type="button" class="slot-mode-btn active" data-mode="1">단일</button>
+                    <button type="button" class="slot-mode-btn" data-mode="2">2명</button>
+                    <button type="button" class="slot-mode-btn" data-mode="5">5명</button>
+                </div>
             </div>
 
-            <!-- ★ [삭제됨] 뷰 토글 버튼 제거 -->
-
-            <!-- 모바일 이동 버튼 -->
-            <a href="mobile.html?mode=mobile" class="view-switch-btn">📱 모바일 버전</a>
-
+            <a href="mobile.html?mode=mobile" class="view-switch-btn">
+                <svg class="mobile-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="7" y="2.5" width="10" height="19" rx="2.2" stroke="currentColor" stroke-width="1.8"/>
+                    <circle cx="12" cy="18" r="1" fill="currentColor"/>
+                </svg>
+                <span>모바일 버전</span>
+            </a>
         </div>
 
         <div class="detail-container single-mode">
-            
-            <!-- SLOT 1 -->
-            <div class="champion-slot active" id="slot-1">
+            <section class="champion-slot active" id="slot-1">
                 <div class="slot-controls">
                     <div class="control-unit">
                         <div class="unit-header">
@@ -65,21 +73,23 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-haste-1" value="0">
+                            <input type="number" id="input-haste-1" value="0" inputmode="numeric">
                             <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
+
                     <hr class="control-divider">
+
                     <div class="control-unit">
                         <div class="unit-header">
                             <span>궁극기 가속</span>
@@ -87,37 +97,46 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-ult-1" value="0">
+                            <input type="number" id="input-ult-1" value="0" inputmode="numeric">
                             <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
-                    <button class="btn-reset-full" id="btn-reset-1">초기화</button>
+
+                    <button class="btn-reset-full" id="btn-reset-1" type="button">초기화</button>
                 </div>
 
                 <div class="slot-content-wrapper">
-                    <div class="slot-header" style="display:none;"></div>
-                    
+                    <div class="slot-header" style="display:none;">
+                        <div class="slot-portrait-wrap">
+                            <div id="holder-1" class="slot-placeholder">1</div>
+                            <img id="img-champ-1" style="display:none;" src="" alt="챔피언 초상화">
+                        </div>
+                        <div class="slot-title-wrap">
+                            <h1 id="name-champ-1">챔피언 선택</h1>
+                            <p id="title-champ-1">좌측 목록에서 챔피언을 선택하세요.</p>
+                        </div>
+                    </div>
+
                     <div class="empty-state">
-                        <div class="icon">?</div>
+                        <div class="icon" aria-hidden="true">01</div>
                         <p>좌측 목록에서 챔피언을 선택하세요.</p>
                     </div>
 
-                    <div id="skills-1"></div>
+                    <div id="skills-1" class="skills-list"></div>
                 </div>
-            </div>
+            </section>
 
-            <!-- SLOT 2 -->
-            <div class="champion-slot" id="slot-2" style="display: none;">
+            <section class="champion-slot" id="slot-2" style="display:none;">
                 <div class="slot-controls">
                     <div class="control-unit">
                         <div class="unit-header">
@@ -126,21 +145,23 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-haste-2" value="0">
+                            <input type="number" id="input-haste-2" value="0" inputmode="numeric">
                             <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
+
                     <hr class="control-divider">
+
                     <div class="control-unit">
                         <div class="unit-header">
                             <span>궁극기 가속</span>
@@ -148,35 +169,262 @@
                         </div>
                         <div class="unit-body">
                             <div class="btn-group minus">
-                                <button data-val="-20">-20</button>
-                                <button data-val="-15">-15</button>
-                                <button data-val="-10">-10</button>
-                                <button data-val="-5">-5</button>
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
                             </div>
-                            <input type="number" id="input-ult-2" value="0">
+                            <input type="number" id="input-ult-2" value="0" inputmode="numeric">
                             <div class="btn-group plus">
-                                <button data-val="5">+5</button>
-                                <button data-val="10">+10</button>
-                                <button data-val="15">+15</button>
-                                <button data-val="20">+20</button>
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
                             </div>
                         </div>
                     </div>
-                    <button class="btn-reset-full" id="btn-reset-2">초기화</button>
+
+                    <button class="btn-reset-full" id="btn-reset-2" type="button">초기화</button>
                 </div>
 
                 <div class="slot-content-wrapper">
-                    <div class="slot-header" style="display:none;"></div>
+                    <div class="slot-header" style="display:none;">
+                        <div class="slot-portrait-wrap">
+                            <div id="holder-2" class="slot-placeholder">2</div>
+                            <img id="img-champ-2" style="display:none;" src="" alt="챔피언 초상화">
+                        </div>
+                        <div class="slot-title-wrap">
+                            <h1 id="name-champ-2">챔피언 선택</h1>
+                            <p id="title-champ-2">비교할 챔피언을 선택하세요.</p>
+                        </div>
+                    </div>
+
                     <div class="empty-state">
-                        <div class="icon">?</div>
+                        <div class="icon" aria-hidden="true">02</div>
                         <p>비교할 챔피언을 선택하세요.</p>
                     </div>
-                    <div id="skills-2"></div>
-                </div>
-            </div>
 
+                    <div id="skills-2" class="skills-list"></div>
+                </div>
+            </section>
+
+            <section class="champion-slot" id="slot-3" style="display:none;">
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-3">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-3" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="control-divider">
+
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속</span>
+                            <span class="cdr-text" id="disp-ult-cdr-3">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-3" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-reset-full" id="btn-reset-3" type="button">초기화</button>
+                </div>
+
+                <div class="slot-content-wrapper">
+                    <div class="slot-header" style="display:none;">
+                        <div class="slot-portrait-wrap">
+                            <div id="holder-3" class="slot-placeholder">3</div>
+                            <img id="img-champ-3" style="display:none;" src="" alt="챔피언 초상화">
+                        </div>
+                        <div class="slot-title-wrap">
+                            <h1 id="name-champ-3">챔피언 선택</h1>
+                            <p id="title-champ-3">비교할 챔피언을 선택하세요.</p>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="icon" aria-hidden="true">03</div>
+                        <p>비교할 챔피언을 선택하세요.</p>
+                    </div>
+
+                    <div id="skills-3" class="skills-list"></div>
+                </div>
+            </section>
+
+            <section class="champion-slot" id="slot-4" style="display:none;">
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-4">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-4" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="control-divider">
+
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속</span>
+                            <span class="cdr-text" id="disp-ult-cdr-4">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-4" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-reset-full" id="btn-reset-4" type="button">초기화</button>
+                </div>
+
+                <div class="slot-content-wrapper">
+                    <div class="slot-header" style="display:none;">
+                        <div class="slot-portrait-wrap">
+                            <div id="holder-4" class="slot-placeholder">4</div>
+                            <img id="img-champ-4" style="display:none;" src="" alt="챔피언 초상화">
+                        </div>
+                        <div class="slot-title-wrap">
+                            <h1 id="name-champ-4">챔피언 선택</h1>
+                            <p id="title-champ-4">비교할 챔피언을 선택하세요.</p>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="icon" aria-hidden="true">04</div>
+                        <p>비교할 챔피언을 선택하세요.</p>
+                    </div>
+
+                    <div id="skills-4" class="skills-list"></div>
+                </div>
+            </section>
+
+            <section class="champion-slot" id="slot-5" style="display:none;">
+                <div class="slot-controls">
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>스킬 가속</span>
+                            <span class="cdr-text" id="disp-cdr-5">0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-haste-5" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="control-divider">
+
+                    <div class="control-unit">
+                        <div class="unit-header">
+                            <span>궁극기 가속</span>
+                            <span class="cdr-text" id="disp-ult-cdr-5">R 0%</span>
+                        </div>
+                        <div class="unit-body">
+                            <div class="btn-group minus">
+                                <button type="button" data-val="-20">-20</button>
+                                <button type="button" data-val="-15">-15</button>
+                                <button type="button" data-val="-10">-10</button>
+                                <button type="button" data-val="-5">-5</button>
+                            </div>
+                            <input type="number" id="input-ult-5" value="0" inputmode="numeric">
+                            <div class="btn-group plus">
+                                <button type="button" data-val="5">+5</button>
+                                <button type="button" data-val="10">+10</button>
+                                <button type="button" data-val="15">+15</button>
+                                <button type="button" data-val="20">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-reset-full" id="btn-reset-5" type="button">초기화</button>
+                </div>
+
+                <div class="slot-content-wrapper">
+                    <div class="slot-header" style="display:none;">
+                        <div class="slot-portrait-wrap">
+                            <div id="holder-5" class="slot-placeholder">5</div>
+                            <img id="img-champ-5" style="display:none;" src="" alt="챔피언 초상화">
+                        </div>
+                        <div class="slot-title-wrap">
+                            <h1 id="name-champ-5">챔피언 선택</h1>
+                            <p id="title-champ-5">비교할 챔피언을 선택하세요.</p>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="icon" aria-hidden="true">05</div>
+                        <p>비교할 챔피언을 선택하세요.</p>
+                    </div>
+
+                    <div id="skills-5" class="skills-list"></div>
+                </div>
+            </section>
         </div>
-    </div>
+    </main>
 </div>
 
 <div id="tooltip" class="tooltip hidden"></div>

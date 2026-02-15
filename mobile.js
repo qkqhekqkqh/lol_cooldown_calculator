@@ -5,12 +5,17 @@ let slots = {
     2: { id: null, haste: 0, ultHaste: 0, data: null }
 };
 let activeSlot = 1;
+let championGridResizeRaf = 0;
 
 // 필터 설정
 let currentSearch = "";
 let currentConsonant = "ALL";
 const HANGUL_INITIALS = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const FILTER_KEYS = ["전체", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+const HASTE_MIN = 0;
+const HASTE_MAX = 500;
+const HASTE_DRAG_STEP_PX = 7;
+const HASTE_DRAG_THRESHOLD_PX = 3;
 
 // 예외 처리 데이터
 const AMMO_EXCLUSIONS = ["Leblanc", "Xerath", "Akali", "Kled"];
@@ -80,12 +85,20 @@ async function init() {
 
 function openSidebar() {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.add('active');
+    if (!sidebar) return;
+    sidebar.classList.add('active');
+    sidebar.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('sidebar-open');
+    scheduleChampionGridSync();
+    setTimeout(scheduleChampionGridSync, 300);
 }
 
 function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.remove('active');
+    if (!sidebar) return;
+    sidebar.classList.remove('active');
+    sidebar.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('sidebar-open');
 }
 
 function createFilterButtons() {
@@ -117,6 +130,22 @@ function getChoseong(str) {
     return HANGUL_INITIALS[initialIndex] || "";
 }
 
+function syncChampionGridSquares() {
+    const grid = document.getElementById('champion-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.champ-item').forEach((item) => {
+        item.style.height = `${item.clientWidth}px`;
+    });
+}
+
+function scheduleChampionGridSync() {
+    if (championGridResizeRaf) cancelAnimationFrame(championGridResizeRaf);
+    championGridResizeRaf = requestAnimationFrame(() => {
+        syncChampionGridSquares();
+        championGridResizeRaf = 0;
+    });
+}
+
 function renderChampionList() {
     const grid = document.getElementById('champion-grid');
     if(!grid) return;
@@ -131,24 +160,30 @@ function renderChampionList() {
             const initial = getChoseong(champ.name);
             if (initial !== currentConsonant) return;
         }
-        
-        const item = document.createElement('div');
-        item.className = 'champ-item';
-        item.onclick = () => {
+
+        const selectAndClose = () => {
             selectChampion(champ.id);
             closeSidebar();
         };
-        
+
+        const item = document.createElement('div');
+        item.className = 'champ-item';
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
+        item.onclick = selectAndClose;
+        item.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectAndClose();
+            }
+        };
+
         const img = document.createElement('img');
         img.src = `https://ddragon.leagueoflegends.com/cdn/${currentVersion}/img/champion/${champ.image.full}`;
         img.loading = "lazy";
-        img.style.width = "100%";
-        img.style.aspectRatio = "1/1";
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "8px";
-        img.style.border = "1px solid #333";
-        img.style.display = "block";
-        
+        img.className = 'champ-thumb';
+        img.alt = `${champ.name} 초상화`;
+
         const name = document.createElement('span');
         name.innerText = champ.name;
         
@@ -156,6 +191,8 @@ function renderChampionList() {
         item.appendChild(name);
         grid.appendChild(item);
     });
+
+    scheduleChampionGridSync();
 }
 
 function selectChampion(champId) {
@@ -234,13 +271,18 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     
     const isPassive = (key === "P");
     const hasForms = data.forms ? true : false;
+    const cooldownArray = Array.isArray(data.cooldown)
+        ? data.cooldown.map(v => Number(v) || 0)
+        : [];
+    const hasCooldownValues = cooldownArray.length > 0;
+    const hasRealCooldown = cooldownArray.some(v => v > 0);
 
     let isStatic = false;
-    if (data.cooldown && Array.isArray(data.cooldown) && data.cooldown.length > 0) {
-        isStatic = data.cooldown.every(v => v === data.cooldown[0]);
+    if (hasCooldownValues) {
+        isStatic = cooldownArray.every(v => v === cooldownArray[0]);
     }
 
-    if (data.cooldown || hasForms) {
+    if (hasForms || hasRealCooldown) {
         let timeLabel = '쿨타임';
         if (isAmmo) timeLabel = '1회 충전 시간';
         if (isPassive) timeLabel = '재사용 대기시간';
@@ -249,55 +291,48 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
         if (isAmmo) textClass = "ammo-text";
         if (isPassive) textClass = "passive-text";
 
-        // ★ [수정] 표와 버튼 토글 제거 -> 항상 나열형/단일형 + 우측 정렬
         if (hasForms) {
-            // 폼 변환 스킬 (여러 줄)
             let formRows = "";
             Object.keys(data.forms).forEach(formName => {
                 const cdArr = data.forms[formName];
                 formRows += `
-                    <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px; color:#ddd; align-items:center;">
-                        <span style="flex:1;">${formName}</span>
-                        <span class="cd-value ${textClass}" 
+                    <div class="form-row">
+                        <span class="form-name">${formName}</span>
+                        <span class="cd-value form-cd ${textClass}" 
                                 data-base-arr='${JSON.stringify(cdArr)}'
                                 data-is-ammo="${isAmmo}" 
-                                data-is-passive="${isPassive}"
-                                style="color:#0ac8f6; font-weight:bold; text-align:right; font-size:20px;">--</span>
+                                data-is-passive="${isPassive}">--</span>
                     </div>
                 `;
             });
             cooldownUI = `
-                <div style="margin-top:5px; padding:8px; background:#1a1c29; border-radius:4px;">
-                    <div style="font-size:11px; color:#888; margin-bottom:2px;">${timeLabel}</div>
+                <div class="cooldown-block">
+                    <div class="cooldown-label">${timeLabel}</div>
                     ${formRows}
                 </div>
             `;
         } else if (isStatic) {
-            // 단일 값 (전 구간 동일)
-            const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
+            const tableTitle = `<div class="cooldown-label">${timeLabel}</div>`;
             cooldownUI = `
                 ${tableTitle}
                 <div class="cd-value ${textClass}" 
-                        style="font-size:20px; font-weight:bold; color:#0ac8f6; text-align: right;" 
-                        data-base-cd="${data.cooldown[0]}" 
+                        data-base-cd="${cooldownArray[0]}" 
                         data-is-ammo="${isAmmo}" 
                         data-is-passive="${isPassive}">--</div>
             `;
         } else {
-            // 나열 (12 / 11 / 10 ...)
-            const tableTitle = `<div style="font-size:12px; margin-bottom:4px; color:#666;">${timeLabel}</div>`;
+            const tableTitle = `<div class="cooldown-label">${timeLabel}</div>`;
             cooldownUI = `
                 ${tableTitle}
                 <div class="cd-value ${textClass}" 
-                        style="font-size:20px; font-weight:bold; color:#0ac8f6; word-break: break-all; text-align: right;" 
-                        data-base-arr='${JSON.stringify(data.cooldown)}'
+                        data-base-arr='${JSON.stringify(cooldownArray)}'
                         data-is-ammo="${isAmmo}" 
                         data-is-passive="${isPassive}">--</div>
             `;
         }
 
     } else {
-        cooldownUI = '<div style="color:#555; font-size:12px; margin-top:5px;">쿨타임 없음</div>';
+        cooldownUI = '<div class="cooldown-label">쿨타임 없음</div>';
     }
 
     let tags = [];
@@ -305,18 +340,18 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
     if (textDesc.includes('토글')) tags.push('<span class="tag toggle">토글</span>');
     if (isPassive) tags.push('<span class="tag passive">패시브</span>');
     if (isAmmo) tags.push(`<span class="tag ammo">충전형</span>`);
-    if (isStatic && !hasForms && data.cooldown) tags.push('<span class="tag static">전 구간 동일</span>');
-    if (hasForms) tags.push('<span class="tag static" style="color:#ffd700; border-color:#ffd700;">폼 변환</span>');
+    if (isStatic && !hasForms && hasRealCooldown) tags.push('<span class="tag static">전 구간 동일</span>');
+    if (hasForms) tags.push('<span class="tag form">폼 변환</span>');
     
     const desc = cleanDesc(textDesc);
     const safeName = data.name.replace(/"/g, '&quot;');
 
     return `
-        <div class="skill-card mobile-card" onclick="toggleDesc(this)">
+        <div class="skill-card mobile-card" onclick="toggleDesc(event, this)">
             <div class="skill-main-view">
-                <div class="skill-icon-area" style="position:relative; width:40px; height:40px; flex-shrink:0;">
-                    <img src="${imgUrl}" class="skill-img" style="width:100%; height:100%; border-radius:6px; border:1px solid #444;">
-                    <div class="skill-key-badge" style="position:absolute; bottom:-6px; right:-6px; background:#000; color:#c89b3c; border:1px solid #c89b3c; width:16px; height:16px; font-size:9px; font-weight:bold; display:flex; align-items:center; justify-content:center; border-radius:50%; z-index:10;">${key}</div>
+                <div class="skill-icon-area">
+                    <img src="${imgUrl}" class="skill-img" alt="${safeName} 아이콘">
+                    <div class="skill-key-badge">${key}</div>
                 </div>
                 <div class="skill-info-area">
                     <div class="skill-header">
@@ -326,31 +361,103 @@ function createSkillHTML(data, key, isSpell, index, slotId) {
                     ${cooldownUI}
                 </div>
             </div>
-            <div class="skill-desc-drawer" style="display:none;">
-                <hr style="border:0; border-top:1px solid #333; margin:8px 0;">
-                <p style="font-size:13px; color:#aaa; line-height:1.4;">${desc}</p>
+            <div class="skill-desc-drawer" hidden>
+                <hr class="skill-desc-divider">
+                <p class="skill-desc-text">${desc}</p>
             </div>
-            ${data.cooldown ? `<div style="display:none;" id="base-cd-${slotId}-${index}">${JSON.stringify(data.cooldown)}</div>` : ''}
+            ${hasRealCooldown ? `<div style="display:none;" id="base-cd-${slotId}-${index}">${JSON.stringify(cooldownArray)}</div>` : ''}
         </div>`;
 }
 
-window.toggleDesc = function(element) {
-    if (event.target.tagName === 'BUTTON' || event.target.classList.contains('lvl-btn')) return;
+window.toggleDesc = function(evt, element) {
+    if (evt && (evt.target.tagName === 'BUTTON' || evt.target.classList.contains('lvl-btn'))) return;
     const drawer = element.querySelector('.skill-desc-drawer');
     if (drawer) {
-        const isHidden = drawer.style.display === 'none';
-        drawer.style.display = isHidden ? 'block' : 'none';
-        element.style.backgroundColor = isHidden ? '#2a2e3f' : '#222635';
+        const isHidden = drawer.hasAttribute('hidden');
+        if (isHidden) {
+            drawer.removeAttribute('hidden');
+            element.classList.add('is-open');
+        } else {
+            drawer.setAttribute('hidden', '');
+            element.classList.remove('is-open');
+        }
     }
+}
+
+function clampHasteValue(raw) {
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed)) return HASTE_MIN;
+    return Math.max(HASTE_MIN, Math.min(HASTE_MAX, parsed));
+}
+
+function syncHasteControlUI(slotId, type, value) {
+    const input = document.getElementById(`input-${type}-${slotId}`);
+    if (input) input.value = value;
+}
+
+function bindInputDragAdjust(input, getCurrentValue, applyValue) {
+    let dragState = null;
+
+    const clearDragState = () => {
+        dragState = null;
+        input.classList.remove('drag-adjusting');
+        document.body.classList.remove('haste-dragging');
+    };
+
+    input.addEventListener('pointerdown', (e) => {
+        if (typeof e.button === 'number' && e.button !== 0) return;
+        dragState = {
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            startValue: getCurrentValue(),
+            moved: false
+        };
+        try {
+            input.setPointerCapture(e.pointerId);
+        } catch (_) {
+            // no-op
+        }
+    });
+
+    input.addEventListener('pointermove', (e) => {
+        if (!dragState || e.pointerId !== dragState.pointerId) return;
+        const dx = e.clientX - dragState.startX;
+        const dy = dragState.startY - e.clientY;
+        const movedDist = Math.abs(dx) + Math.abs(dy);
+        if (movedDist >= HASTE_DRAG_THRESHOLD_PX) {
+            dragState.moved = true;
+        }
+        if (!dragState.moved) return;
+
+        const weightedDelta = dx + (dy * 0.4);
+        const deltaValue = Math.round(weightedDelta / HASTE_DRAG_STEP_PX);
+        const nextValue = clampHasteValue(dragState.startValue + deltaValue);
+        applyValue(nextValue);
+        input.classList.add('drag-adjusting');
+        document.body.classList.add('haste-dragging');
+        e.preventDefault();
+    });
+
+    const endDrag = (e) => {
+        if (!dragState || e.pointerId !== dragState.pointerId) return;
+        const moved = dragState.moved;
+        clearDragState();
+        if (moved) {
+            e.preventDefault();
+            input.blur();
+        }
+    };
+
+    input.addEventListener('pointerup', endDrag);
+    input.addEventListener('pointercancel', endDrag);
+    input.addEventListener('lostpointercapture', clearDragState);
 }
 
 function updateCooldownsInSlot(slotId) {
     const slot = slots[slotId];
-    
-    const hInput = document.getElementById(`input-haste-${slotId}`);
-    const uInput = document.getElementById(`input-ult-${slotId}`);
-    if(hInput) hInput.value = slot.haste;
-    if(uInput) uInput.value = slot.ultHaste;
+    syncHasteControlUI(slotId, 'haste', slot.haste);
+    syncHasteControlUI(slotId, 'ult', slot.ultHaste);
     
     const baseCdr = 1 - (100 / (100 + slot.haste));
     const ultCdr = 1 - (100 / (100 + slot.haste + slot.ultHaste));
@@ -412,11 +519,14 @@ function setupEventListeners() {
             if(currentSearch) {
                 currentConsonant = 'ALL';
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                document.querySelector('.filter-btn[data-key="전체"]').classList.add('active');
+                const allBtn = document.querySelector('.filter-btn[data-key="전체"]');
+                if (allBtn) allBtn.classList.add('active');
             }
             renderChampionList();
         });
     }
+
+    window.addEventListener('resize', scheduleChampionGridSync);
 
     const menuBtn = document.getElementById('mobile-menu-btn');
     const closeBtn = document.getElementById('sidebar-close-btn');
@@ -428,6 +538,14 @@ function setupEventListeners() {
     if (closeBtn && sidebar) {
         closeBtn.addEventListener('click', closeSidebar);
     }
+    if (sidebar) {
+        sidebar.addEventListener('click', (e) => {
+            if (e.target === sidebar) closeSidebar();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSidebar();
+    });
 
     // view-toggle-mobile listener 삭제
 
@@ -449,19 +567,27 @@ function setupControl(slotId, type) {
     const input = document.getElementById(`input-${type}-${slotId}`);
     if (!input) return;
     const key = type === 'haste' ? 'haste' : 'ultHaste';
-    input.addEventListener('change', (e) => {
-        let val = parseInt(e.target.value) || 0;
-        if (val < 0) val = 0;
+    input.min = `${HASTE_MIN}`;
+    input.max = `${HASTE_MAX}`;
+
+    const applyInputValue = (raw) => {
+        const val = clampHasteValue(raw);
         slots[slotId][key] = val;
+        syncHasteControlUI(slotId, type, val);
         updateCooldownsInSlot(slotId);
-    });
+    };
+
+    input.addEventListener('input', (e) => applyInputValue(e.target.value));
+    input.addEventListener('change', (e) => applyInputValue(e.target.value));
+    bindInputDragAdjust(input, () => slots[slotId][key], applyInputValue);
+
     const parent = input.closest('.control-unit');
     if (parent) {
         parent.querySelectorAll('button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const delta = parseInt(btn.dataset.val);
                 if (!isNaN(delta)) {
-                    slots[slotId][key] = Math.max(0, slots[slotId][key] + delta);
+                    slots[slotId][key] = clampHasteValue(slots[slotId][key] + delta);
                     updateCooldownsInSlot(slotId);
                 }
             });
