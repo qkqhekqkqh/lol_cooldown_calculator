@@ -16,15 +16,8 @@ https://qkqhekqkqh.github.io/lol_cooldown_calculator/
 
 ### todo
 
-스펠, 소환사 주문 가속 구현
-
-스킬/스펠 아이콘 클릭시 쿨타임 타이머 기능
-
 위 기능을 스트림덱 인풋으로도 구현 가능한지 체크
 (xinput도 고민중)
 
-챔피언카드 최대 6장까지
 
 모바일은 사이드바 챔피언 그리드가 불편하니 다른 ui 고민해볼것
-
-
